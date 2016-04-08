@@ -1,0 +1,20 @@
+><![CDATA[
+	The size of the ScheduledExecutorService's thread pool. The default is 1.
+					]]></xsd:documentation>
+				</xsd:annotation>
+			</xsd:attribute>
+		</xsd:complexType>
+	</xsd:element>
+
+	<xsd:element name="executor">
+		<xsd:annotation>
+			<xsd:documentation><![CDATA[
+	Defines a ThreadPoolTaskExecutor instance with configurable pool size,
+	queue-capacity, keep-alive, and rejection-policy values.
+			]]></xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:attribute name="id" type="xsd:string" use="required">
+				<xsd:annotation>
+					<xsd:documentation><![CDATA[
+	The bean name for the generated ThreadPoolTaskExecut
