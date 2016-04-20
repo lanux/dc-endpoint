@@ -12,11 +12,14 @@
   else {
     factory(jQuery);
   }
-} function($, undefined) {
+}(function($, undefined) {
   "use strict";
 
 
 
 
 
-});
+
+
+
+}));
