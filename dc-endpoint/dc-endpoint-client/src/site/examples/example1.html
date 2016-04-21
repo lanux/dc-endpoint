@@ -5,14 +5,20 @@
     <title>Example1</title>
     <script src="../js/jquery-1.7.1.js"></script>
     <script  type="text/javascript" src="../evt-log/v1/pc-pad/analytics.js" ></script>
+    <script  type="text/javascript" src="../google/analytics.js" ></script>
     <script type="text/javascript">
 
-        var _maTracker = new window.MATracker();
+        var TrackerManager = window.TrackerManager;
 
-        // --- add to queue
-        _maTracker.push({
 
-        });
+
+        //TrackerManager.create('UA-XXXXX-Y', 'auto');
+
+        ga(function() {
+            var tracker = ga.create('UA-XXXXX-Y', 'auto');
+            console.log(tracker);
+        })
+
 
 
 
