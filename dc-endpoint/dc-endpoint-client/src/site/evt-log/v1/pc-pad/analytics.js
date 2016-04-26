@@ -1,6 +1,34 @@
 /**
  * check event log lib
  */
+
+/**
+ * append function function
+ */
+Date.prototype.format = function(fmt) {
+	var o = {
+		"M+" : this.getMonth()+1,                 //月份
+		"d+" : this.getDate(),                    //日
+		"H+" : this.getHours(),                   //小时
+		"m+" : this.getMinutes(),                 //分
+		"s+" : this.getSeconds(),                 //秒
+		"q+" : Math.floor((this.getMonth()+3)/3), //季度
+		"S"  : this.getMilliseconds()             //毫秒
+	};
+
+	if(/(y+)/.test(fmt)) {
+		fmt=fmt.replace(RegExp.$1, (this.getFullYear()+"").substr(4 - RegExp.$1.length));
+	}
+
+	for(var k in o) {
+		if(new RegExp("("+ k +")").test(fmt)) {
+			fmt = fmt.replace(RegExp.$1, (RegExp.$1.length==1) ? (o[k]) : (("00"+ o[k]).substr((""+ o[k]).length)));
+		}
+	}
+	return fmt;
+};
+
+
 (function (factory) {
 	"use strict";
 	if (typeof define === 'function' && define.amd) {
@@ -51,7 +79,28 @@
 			}
 		}
 		return "";
+	};
+
+	Utils.setLocal = function(key, value) {
+		var result = JSON.stringify(value);
+		window.localStorage.setItem(key ,result );
+	};
+
+
+	Utils.getLocal = function(key) {
+		var v = window.localStorage.getItem(key);
+		var result = eval('(' + v + ')');;
+		return result;
+	};
+
+	Utils.removeLocal = function(key) {
+		var result = window.localStorage.removeItem(key);
+		return result;
 	}
+
+
+
+
 
 	/**
 	 * example : Utils.genUUID(32, 10)
@@ -88,6 +137,9 @@
 
 		return uuid.join('');
 	};
+
+
+
 
 
 
@@ -145,11 +197,6 @@
 			_clientEnvInfo['scr_avai_w'] = screen.availWidth;
 
 
-			for (var i in _clientEnvInfo) {
-				console.log(i + " -> " + _clientEnvInfo[i]);
-			}
-
-
 
 			// --- get last referrer url ---
 			var lastReferrer = document.referrer;
@@ -176,18 +223,28 @@
 				_clientInfo[___ACC_NAME] = accountName;
 			}
 
+			// ---- store access url record ---
+			var _accHist = "URLHIST-" + userId;
 
-
-
-			if (_this.supportLocalStorage) {
-
-				// --- get the user id ---
-
-
-
+			var urlHistArray = Utils.getLocal(_accHist);
+			if (!urlHistArray || typeof urlHistArray === 'undefined') {
+				urlHistArray = [];
 			}
 
+			// --- put url Hist tp local store ---
+			var rec = {
+				'req-time' : new Date().format("yyyy-MM-dd HH:mm:ss"),
+				'url' : window.location.href,
+				'origin' : window.location.origin,
+				'pathname' : window.location.pathname,
+				'hostname' : window.location.hostname,
+				'hash' : window.location.hash
+			};
 
+			//Utils.removeLocal(_accHist);
+
+			urlHistArray.push(rec);
+			Utils.setLocal(_accHist, urlHistArray);
 
 
 		};
@@ -227,7 +284,7 @@
         /**
          *
          * @param command
-         * @param type
+         * @param type --- one of the follow value "pageview" , "screenview" , "event" , "transaction" , "item" , "exception"
          * @param eventType
          * @param eventAct
          * @param eventLabel
@@ -242,6 +299,7 @@
 
 			} else {
 
+				// --- use  default plugin ---
 
 				if (command === 'send') {
 
@@ -263,6 +321,13 @@
 
 
 
+		// --- trigger scheudler ---
+
+
+
+
+
+
 
 
 
@@ -272,6 +337,9 @@
 
 	var TrackerManager = {
 
+		/**
+		 * binding instance handle ---
+		 */
 		_trackerInst : {
 
 		},
