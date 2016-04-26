@@ -12,12 +12,14 @@
 
 
 
-        //TrackerManager.create('UA-XXXXX-Y', 'auto');
+       var _tracker = TrackerManager.create('UA-XXXXX-Y', 'auto');
 
-        ga(function() {
-            var tracker = ga.create('UA-XXXXX-Y', 'auto');
-            console.log(tracker);
-        })
+        _tracker.track('send','pageview');
+
+       // console.log(_tracker);
+
+        ga('create', 'UA-XXXXX-Y', 'auto');
+        ga('send', 'pageview');
 
 
 
