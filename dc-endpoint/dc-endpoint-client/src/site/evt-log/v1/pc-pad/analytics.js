@@ -289,7 +289,7 @@ Date.prototype.format = function(fmt) {
          * @param eventAct
          * @param eventLabel
          */
-        _this.track = function(command , type , eventType , eventAct , eventLabel) {
+        _this.track = function(command , hitType , eventType , eventAct , eventLabel) {
 
 			command = command.toLowerCase();
 
@@ -303,12 +303,32 @@ Date.prototype.format = function(fmt) {
 
 				if (command === 'send') {
 
-					if (type === 'pageview') {
+					if (typeof hitType === 'object') {
 
-						// --- mark page view ---
-						_this.sendPageView();
+					} else if (typeof hitType === 'string') {
+
+						if (hitType === 'pageview') {
+
+							// --- mark page view ---
+							_this.sendPageView();
+
+						}
+						// --- add event to handle ---
+						else if (hitType === 'event') {
+
+
+						}
 
 					}
+
+
+
+
+				}
+
+				// --- add plugin
+				else if (command === 'provide') {
+
 				}
 
 
