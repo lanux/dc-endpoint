@@ -90,7 +90,6 @@
 	};
 
 
-<<<<<<< HEAD
 
 
 
@@ -164,75 +163,6 @@
 
 
     window.TrackerManager = TrackerManager;
-
-
-
-
-=======
-    // set the tracker class ---
-    var MATracker = function() {
-        var _this = this;
-
-        var logQueue = [];
-
-
-
-
-        /**
-         * add track record to queue
-         * @param obj
-         */
-        _this.push = function(obj) {
-
-
-        }
-
-
-
-        _this._trackPage = function() {
-
-        }
-
-        _this._trackEvent = function() {
-
-        }
-
-
-        /**
-         *
-         * @param command
-         * @param type
-         * @param eventType
-         * @param eventAct
-         * @param eventLabel
-         */
-        _this.track = function(command , type , eventType , eventAct , eventLabel) {
-
-        }
-
-
-
-
-
-
-    }
-
-    window.MATracker = MATracker;
->>>>>>> branch 'master' of https://github.com/visonruan/dc-endpoint
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
