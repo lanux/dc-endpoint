@@ -151,9 +151,9 @@ Date.prototype.format = function(fmt) {
 
 		var _this = this;
 
-        var logQueue = [];
+        var ___queue = [];
 
-		_this.host = 'https://localhost:8080/';
+		_this.host = 'https://localhost:8080';
 
 		var _pathMap = {
 			'COLLECT':'/collect'
@@ -279,6 +279,43 @@ Date.prototype.format = function(fmt) {
 		_this.sendPageView = function() {
 
 		};
+		
+		/**
+		 * @param eventRef 事件关联对像
+		 * @param eventCategory 事件分类 {}
+		 * @param eventAction 关注定义事件动作
+		 * @param eventLabel 定义事件标签
+		 * @param eventValue 定义事件传送的值
+		 * 
+		 */
+		_this.sendEvent = function(eventRef) {
+
+			// --- push to queue ---
+			var queue = {
+				'userId': Utils.getCookie(___USER_ID),
+				'url':  window.location.href,
+				'req-time' : new Date().format("yyyy-MM-dd HH:mm:ss"),
+				'eventCategory' : eventRef['eventCategory'],
+				'eventAction' : eventRef['eventAction']
+			}
+
+			if (eventRef['eventLabel']) {
+				queue['eventLabel'] = eventRef['eventLabel'];
+			}
+
+			if ( eventRef['eventValue'] ) {
+				queue['eventValue'] = eventRef['eventValue'];
+			}
+
+			_this.addQueue(queue);
+
+		};
+
+
+		_this.addQueue = function(queueObj) {
+			var queStr = JSON.stringify(queueObj);
+			___queue.push( queStr );
+		};
 
 
         /**
@@ -289,9 +326,15 @@ Date.prototype.format = function(fmt) {
          * @param eventAct
          * @param eventLabel
          */
-        _this.track = function(command , hitType , eventType , eventAct , eventLabel) {
+        _this.track = function(command) {
 
 			command = command.toLowerCase();
+
+			// --- hitType mapping ---
+
+			//console.log(arguments);
+
+
 
 
 			if (command.indexOf(':') > -1) {
@@ -302,24 +345,43 @@ Date.prototype.format = function(fmt) {
 				// --- use  default plugin ---
 
 				if (command === 'send') {
-
-					if (typeof hitType === 'object') {
-
-					} else if (typeof hitType === 'string') {
-
-						if (hitType === 'pageview') {
-
-							// --- mark page view ---
-							_this.sendPageView();
-
+					var hitTypeObj = arguments[0];
+					var hitType = "";
+					var argsAppend = {};
+					if (typeof arguments[0] === 'object') {
+						hitType = hitTypeObj['hitType'];
+						if (hitType === 'event') {
+							argsAppend['eventCategory'] = hitTypeObj['eventCategory'];
+							argsAppend['eventLabel'] = hitTypeObj['eventLabel'];
+							argsAppend['eventAction'] = hitTypeObj['eventAction'];
+							argsAppend['eventValue'] = hitTypeObj['eventValue'];
 						}
-						// --- add event to handle ---
-						else if (hitType === 'event') {
 
-
+					} else if (typeof arguments[0] === 'string') {
+						hitType = arguments[1];
+						if (hitType === 'event') {
+							argsAppend['eventCategory'] = arguments[1];
+							argsAppend['eventAction'] = arguments[2];
+							argsAppend['eventLabel'] = arguments[3];
+							argsAppend['eventValue'] = arguments[4];
 						}
+					}
+
+
+					// --- invoke hit type event ---
+					if (hitType === 'pageview') {
+
+						// --- mark page view ---
+						_this.sendPageView();
 
 					}
+					// --- add event to handle ---
+					else if (hitType === 'event') {
+						console.log(hitType);
+						_this.sendEvent(argsAppend);
+
+					}
+
 
 
 
@@ -339,9 +401,55 @@ Date.prototype.format = function(fmt) {
 
         };
 
+		// --- inner method ---
+		function XHR() {
+			var xhr;
+			try {xhr = new XMLHttpRequest();}
+			catch(e) {
+				var IEXHRVers =["Msxml3.XMLHTTP","Msxml2.XMLHTTP","Microsoft.XMLHTTP"];
+				for (var i=0,len=IEXHRVers.length;i< len;i++) {
+					try {xhr = new ActiveXObject(IEXHRVers[i]);}
+					catch(e) {continue;}
+				}
+			}
+			return xhr;
+		}
+
+
+
+
+		var _xhr = XHR();
+
+
+
+		// --- send to server ----
+		var sendToServer = function() {
+			var url = _this.host + _pathMap['COLLECT'];
+
+			//console.log(___queue);
+			_xhr.open('POST' , url , true);
+
+
+			_xhr.onreadystatechange = function(i) {
+
+
+			}
+
+			_xhr.send(null);
+
+
+		};
+
 
 
 		// --- trigger scheudler ---
+		try {
+			var iId = setInterval(sendToServer , 5000);
+		} catch (Error) {
+
+			//console.log(Error);
+
+		}
 
 
 
