@@ -8,6 +8,11 @@ var Router = require('node-router');
 // base route
 var router = Router();
 var route = router.push;
+
+// environment setting
+var PORT = 3000;
+
+
 //var routes = require('./routes/v1');
 //var users = require('./routes/users');
 
@@ -26,7 +31,12 @@ route( 'POST' , bodyParser.urlencoded({extended: false}) );
 /**
  * receive data from client endpoint
  */
-route('/pc-pad/collect' , function(req, res, next) {
+route('/pc-pad/collect/v1' , function(req, res, next) {
+
+  res.writeHead(200, {
+    "content-type":"text/plain",
+    "Access-Control-Allow-Origin":"*"
+  })
 
 
   res.send('Hello.');
@@ -39,8 +49,8 @@ route('/pc-pad/collect' , function(req, res, next) {
 var server = http.createServer(router);
 
 // --- startup server
-server.listen(3000);
-
+server.listen(PORT);
+console.log("Server runing at port: " + PORT + ".");
 
 /*
 var app = express();

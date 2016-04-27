@@ -153,16 +153,14 @@ Date.prototype.format = function(fmt) {
 
         var ___queue = [];
 
-		_this.host = 'https://localhost:3000';
+		_this.host = 'http://localhost:3000';
 		
 		var _devicePath = {
 			'pc':'/pc-pad',
 			'mobile':'/mobile'
-		}
-
-		var _pathMap = {
+		}, _pathMap = {
 			'COLLECT':'/collect'
-		};
+		}, _version = '/v1';
 
 
 
@@ -318,8 +316,16 @@ Date.prototype.format = function(fmt) {
 
 
 		_this.addQueue = function(queueObj) {
-			var queStr = JSON.stringify(queueObj);
-			___queue.push( queStr );
+			//var queStr = JSON.stringify(queueObj);
+			___queue.push( queueObj );
+		};
+
+		_this.getAllQueue = function() {
+			return ___queue;
+		};
+
+		_this.resetQueue = function() {
+			___queue = [];
 		};
 
 
@@ -428,19 +434,30 @@ Date.prototype.format = function(fmt) {
 
 
 		// --- send to server ----
-		var sendToServer = function() {
-			var url = _this.host + _devicePath['pc'] +  _pathMap['COLLECT'];
-
-			//console.log(___queue);
-			_xhr.open('POST' , url , true);
+		var sendToServer = function(recQueue) {
+			var url = _this.host + _devicePath['pc'] +  _pathMap['COLLECT'] + _version;
 
 
-			_xhr.onreadystatechange = function(domObj) {
-
-
+			if (recQueue.length == 0) {
+				return ;
 			}
 
-			_xhr.send(null);
+			var queStr = JSON.stringify(recQueue);
+			console.log(queStr);
+
+
+			_xhr.open('POST' , url , true);
+
+			_xhr.onreadystatechange = function(domObj) {
+				// --- request complete  ---
+				if (_xhr.readyState == 4) {
+					// --- remote queue ---
+					___queue = recQueue = [];
+				}
+			};
+
+			_xhr.send(queStr);
+
 
 
 		};
@@ -449,7 +466,7 @@ Date.prototype.format = function(fmt) {
 
 		// --- trigger scheudler ---
 		try {
-			var iId = setInterval(sendToServer , 5000);
+			var iId = setInterval(sendToServer , 5000 , ___queue);
 		} catch (Error) {
 
 			//console.log(Error);
