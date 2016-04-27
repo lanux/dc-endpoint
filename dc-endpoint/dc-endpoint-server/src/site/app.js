@@ -1,21 +1,50 @@
-var express = require('express');
 var path = require('path');
-var favicon = require('serve-favicon');
-var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
+var http = require('http');
+var url = require('url');
+var Router = require('node-router');
 
-var routes = require('./routes/index');
-var users = require('./routes/users');
+// base route
+var router = Router();
+var route = router.push;
+//var routes = require('./routes/v1');
+//var users = require('./routes/users');
 
+
+// ---- add middleware (optional ----
+route( cookieParser() );
+
+/*only use bodyParser on POST requests*/
+route( 'POST' , bodyParser.urlencoded({extended: false}) );
+
+
+// call output response
+
+
+
+/**
+ * receive data from client endpoint
+ */
+route('/pc-pad/collect' , function(req, res, next) {
+
+
+  res.send('Hello.');
+
+})
+
+/**
+ * create server define
+ */
+var server = http.createServer(router);
+
+// --- startup server
+server.listen(3000);
+
+
+/*
 var app = express();
 
-// view engine setup
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'jade');
-
-// uncomment after placing your favicon in /public
-//app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -58,3 +87,4 @@ app.use(function(err, req, res, next) {
 
 
 module.exports = app;
+*/

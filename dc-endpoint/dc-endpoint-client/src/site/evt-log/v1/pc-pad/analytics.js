@@ -153,7 +153,12 @@ Date.prototype.format = function(fmt) {
 
         var ___queue = [];
 
-		_this.host = 'https://localhost:8080';
+		_this.host = 'https://localhost:3000';
+		
+		var _devicePath = {
+			'pc':'/pc-pad',
+			'mobile':'/mobile'
+		}
 
 		var _pathMap = {
 			'COLLECT':'/collect'
@@ -424,13 +429,13 @@ Date.prototype.format = function(fmt) {
 
 		// --- send to server ----
 		var sendToServer = function() {
-			var url = _this.host + _pathMap['COLLECT'];
+			var url = _this.host + _devicePath['pc'] +  _pathMap['COLLECT'];
 
 			//console.log(___queue);
 			_xhr.open('POST' , url , true);
 
 
-			_xhr.onreadystatechange = function(i) {
+			_xhr.onreadystatechange = function(domObj) {
 
 
 			}
