@@ -147,7 +147,7 @@ Date.prototype.format = function(fmt) {
 
     // set the tracker class ---
     var Tracker = function() {
-        var ___ACC_NAME = "acc_name", ___USER_ID = "userid";
+        var ___ACC_NAME = "uid", ___USER_ID = "cid", ___DATA_REFERRER = "dr", __SCREEN_RE;
 
 		var _this = this;
 
@@ -292,19 +292,20 @@ Date.prototype.format = function(fmt) {
 
 			// --- push to queue ---
 			var queue = {
-				'userId': Utils.getCookie(___USER_ID),
-				'url':  window.location.href,
+				'dl':  window.location.href,
+				't':'event',
 				'req-time' : new Date().format("yyyy-MM-dd HH:mm:ss"),
-				'eventCategory' : eventRef['eventCategory'],
-				'eventAction' : eventRef['eventAction']
-			}
+				'ec' : eventRef['eventCategory'],
+				'ea' : eventRef['eventAction']
+			};
+			queue[___USER_ID] = Utils.getCookie(___USER_ID);
 
 			if (eventRef['eventLabel']) {
-				queue['eventLabel'] = eventRef['eventLabel'];
+				queue['el'] = eventRef['eventLabel'];
 			}
 
 			if ( eventRef['eventValue'] ) {
-				queue['eventValue'] = eventRef['eventValue'];
+				queue['ev'] = eventRef['eventValue'];
 			}
 
 			_this.addQueue(queue);
@@ -382,10 +383,13 @@ Date.prototype.format = function(fmt) {
 						// --- mark page view ---
 						_this.sendPageView();
 
+						// --- fire send page record ---
+						sendToServer();
+
+
 					}
 					// --- add event to handle ---
 					else if (hitType === 'event') {
-						console.log(hitType);
 						_this.sendEvent(argsAppend);
 
 					}
@@ -431,7 +435,7 @@ Date.prototype.format = function(fmt) {
 
 
 		// --- send to server ----
-		var sendToServer = function(recQueue) {
+		var sendToServer = function() {
 			var url = _this.host + _devicePath['pc'] +  _pathMap['COLLECT'] + _version;
 
 
