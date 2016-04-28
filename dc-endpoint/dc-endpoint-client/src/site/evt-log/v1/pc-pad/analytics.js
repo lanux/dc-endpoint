@@ -438,13 +438,11 @@ Date.prototype.format = function(fmt) {
 			var url = _this.host + _devicePath['pc'] +  _pathMap['COLLECT'] + _version;
 
 
-			if (recQueue.length == 0) {
+			if (___queue.length == 0) {
 				return ;
 			}
 
-			var queStr = JSON.stringify(recQueue);
-			console.log(queStr);
-
+			var queStr = JSON.stringify(___queue);
 
 			_xhr.open('POST' , url , true);
 
@@ -452,13 +450,12 @@ Date.prototype.format = function(fmt) {
 				// --- request complete  ---
 				if (_xhr.readyState == 4) {
 					// --- remote queue ---
-					___queue = recQueue = [];
+					___queue =  [];
 				}
 			};
 
+			_xhr.setRequestHeader('content-type','application/x-www-form-urlencoded');
 			_xhr.send(queStr);
-
-
 
 		};
 
@@ -466,7 +463,7 @@ Date.prototype.format = function(fmt) {
 
 		// --- trigger scheudler ---
 		try {
-			var iId = setInterval(sendToServer , 5000 , ___queue);
+			var iId = setInterval(sendToServer , 5000);
 		} catch (Error) {
 
 			//console.log(Error);

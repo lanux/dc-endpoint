@@ -3,7 +3,9 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var http = require('http');
 var url = require('url');
+var async=require('async');
 var Router = require('node-router');
+var dateFormat = require('dateformat');
 
 // base route
 var router = Router();
@@ -13,8 +15,12 @@ var route = router.push;
 var PORT = 3000;
 
 
-//var routes = require('./routes/v1');
+var db = require('./module-libs/db');
+db.config({
+    'driver-type':'loki'
+});
 //var users = require('./routes/users');
+
 
 
 // ---- add middleware (optional ----
@@ -25,7 +31,12 @@ route( 'POST' , bodyParser.urlencoded({extended: false}) );
 
 
 // call output response
-
+function getClientIp(req) {
+  return req.headers['x-forwarded-for'] ||
+      req.connection.remoteAddress ||
+      req.socket.remoteAddress ||
+      req.connection.socket.remoteAddress;
+};
 
 
 /**
@@ -33,13 +44,86 @@ route( 'POST' , bodyParser.urlencoded({extended: false}) );
  */
 route('/pc-pad/collect/v1' , function(req, res, next) {
 
-  res.writeHead(200, {
-    "content-type":"text/plain",
-    "Access-Control-Allow-Origin":"*"
-  })
+    res.writeHead(200, {
+        "content-type":"text/plain",
+        "Access-Control-Allow-Origin":"*"
+    });
 
 
-  res.send('Hello.');
+    var ip = getClientIp(req);
+    var body = req.body;
+
+
+
+    for (var bodyCont in body) {
+        var bodyRef = JSON.parse(bodyCont);
+
+
+        for (var i = 0 ; i < bodyRef.length ; i++) {
+            var objContent = bodyRef[i];
+            objContent['userIp'] = ip;
+
+            var now = new Date();
+            var rightNowStr = dateFormat(now , "yyyy-mm-dd'T'HH:MM:ss.l")
+
+
+
+            // --- put to level db ---
+            db.put(ip + '_' + objContent['userId'] + '_' +rightNowStr , objContent);
+
+
+
+            var result = db.get( ip + '_' + objContent['userId'] +  '_' +rightNowStr );
+
+            console.log(result);
+
+            db.delete(ip + '_' + objContent['userId'] + '_' +rightNowStr);
+
+            var rresult = db.get( ip + '_' + objContent['userId'] + '_' +rightNowStr );
+
+            console.log( rresult );
+
+
+            /*
+            db.put(ip + '_' + bodyRef['userId'] + '-time' , bodyCont  , function (err) {
+                if (err) return console.log('Ooops!', err);
+
+                db.get( ip + '_' + bodyRef['userId'] + '-time' , function(err, value)  {
+
+                    console.log('name= ' + value);
+                });
+
+            });
+            */
+
+
+        }
+
+    }
+
+
+
+    // --- access data rem ---
+    /*
+    req.on('data', function(chunk) {
+        body += chunk;
+    });
+
+
+    req.on('end' , function() {
+        console.log('accect body : ' + body);
+    });
+    */
+
+
+
+    // --- response service ---
+    var result = {
+        success:true,
+        msg:'OK'
+    }
+
+    res.end(JSON.stringify(result));
 
 })
 
