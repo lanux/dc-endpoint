@@ -18,12 +18,47 @@ var DB = function() {
             _cur_driver_type = 'loki';
         }
 
-        __lokiContextMap['default-coll'] = lokiDb.addCollection('event-log');
+        //__lokiContextMap['default-coll'] = lokiDb.addCollection('event-log');
 
 
         _conf = conf;
 
     };
+
+    var __currentSchemeName = '';
+
+    _this.setScheme = function(schemeName) {
+        if (_cur_driver_type = 'loki') {
+            __lokiContextMap['default-coll'] = lokiDb.addCollection(schemeName);
+            __currentSchemeName = schemeName;
+        }
+    };
+
+    /**
+     * get all existed scheme
+     */
+    _this.getHisSchemes = function() {
+        var schemes = [];
+
+        if (_cur_driver_type = 'loki') {
+
+            var listSches = lokiDb.listCollections();
+            for (var i = 0 ; i < listSches.length ; i++) {
+                if ( __currentSchemeName != listSches[i]['name'] ) {
+                    schemes.add( listSches[i]['name'] );
+                }
+
+            }
+
+        }
+
+        return schemes;
+    };
+
+    _this.removeExistedScheme = function(schemeName) {
+
+    };
+
 
 
     _this.put = function(key , value ) {

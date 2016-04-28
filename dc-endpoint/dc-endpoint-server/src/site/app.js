@@ -38,6 +38,29 @@ function getClientIp(req) {
       req.connection.socket.remoteAddress;
 };
 
+// --- define log file handle
+function getLogFile(dateInput) {
+    var prefile = dateFormat(dateInput , "yyyymmddHH");
+    var min = dateFormat(dateInput , "MM");
+    var minVal = parseInt(min);
+    var subFileMsg = '';
+    if (minVal > 0 && minVal <= 10) {
+        subFileMsg = '1';
+    } else if (minVal > 10 && minVal <= 20) {
+        subFileMsg = '2';
+    } else if (minVal > 20 && minVal <= 30) {
+        subFileMsg = '3';
+    } else if (minVal > 30 && minVal <= 40) {
+        subFileMsg = '4';
+    } else if (minVal > 40 && minVal <= 50) {
+        subFileMsg = '5';
+    } else if (minVal > 50 && minVal <= 59) {
+        subFileMsg = '6';
+    }
+
+    return prefile+'_'+subFileMsg;
+}
+
 
 /**
  * receive data from client endpoint
@@ -53,8 +76,18 @@ route('/pc-pad/collect/v1' , function(req, res, next) {
     var ip = getClientIp(req);
     var body = req.body;
 
+    var now = new Date();
+    var rightNowStr = dateFormat(now , "yyyy-mm-dd'T'HH:MM:ss.l");
+
+    var curFile = getLogFile(now);
+    db.setScheme(curFile);
 
 
+    var schemes = db.getHisSchemes();
+    console.log(schemes);
+
+
+    // --- load current file ---
     for (var bodyCont in body) {
         var bodyRef = JSON.parse(bodyCont);
 
@@ -63,25 +96,21 @@ route('/pc-pad/collect/v1' , function(req, res, next) {
             var objContent = bodyRef[i];
             objContent['userIp'] = ip;
 
-            var now = new Date();
-            var rightNowStr = dateFormat(now , "yyyy-mm-dd'T'HH:MM:ss.l")
-
-
+            var docKey = ip + '_' + objContent['userId'] + '_' +rightNowStr;
 
             // --- put to level db ---
-            db.put(ip + '_' + objContent['userId'] + '_' +rightNowStr , objContent);
-
-
+            db.put(docKey, objContent);
+            /*
 
             var result = db.get( ip + '_' + objContent['userId'] +  '_' +rightNowStr );
 
-            console.log(result);
 
             db.delete(ip + '_' + objContent['userId'] + '_' +rightNowStr);
 
             var rresult = db.get( ip + '_' + objContent['userId'] + '_' +rightNowStr );
 
             console.log( rresult );
+            */
 
 
             /*

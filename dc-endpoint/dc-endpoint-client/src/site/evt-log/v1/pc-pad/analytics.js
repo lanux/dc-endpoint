@@ -244,11 +244,8 @@ Date.prototype.format = function(fmt) {
 				'hash' : window.location.hash
 			};
 
-			//Utils.removeLocal(_accHist);
-
 			urlHistArray.push(rec);
 			Utils.setLocal(_accHist, urlHistArray);
-
 
 		};
 
