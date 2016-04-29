@@ -31,6 +31,7 @@ Date.prototype.format = function(fmt) {
 
 (function (factory) {
 	"use strict";
+	/*
 	if (typeof define === 'function' && define.amd) {
 		define(['jquery'], factory);
 	}
@@ -40,6 +41,9 @@ Date.prototype.format = function(fmt) {
 	else {
 		factory(jQuery);
 	}
+	*/
+
+	factory(jQuery);
 }(function($, undefined) {
 	"use strict";
 
@@ -92,6 +96,25 @@ Date.prototype.format = function(fmt) {
 		var result = eval('(' + v + ')');;
 		return result;
 	};
+
+	Utils.setSession = function(key , value) {
+		var result = JSON.stringify(value);
+		window.sessionStorage.setItem(key ,result );
+	};
+
+	/**
+	 * get message for key
+	 * @param key
+	 * @returns {Object}
+     */
+	Utils.getSession = function(key) {
+		var v = window.sessionStorage.getItem(key);
+		var result = eval('(' + v + ')');;
+		return result;
+	}
+
+
+
 
 	Utils.removeLocal = function(key) {
 		var result = window.localStorage.removeItem(key);
@@ -175,18 +198,13 @@ Date.prototype.format = function(fmt) {
 
 		_this.loadPageInfo = function() {
 
-
-
 			// --- get client nav info ---
-			_clientEnvInfo['browser_appCodeName'] = navigator.appCodeName;
-			_clientEnvInfo['browser_name'] = navigator.appName;
-			_clientEnvInfo['browser_ver'] = navigator.appVersion;
+			_clientEnvInfo['bro-acn'] = navigator.appCodeName;
+			_clientEnvInfo['bro_name'] = navigator.appName;
+			_clientEnvInfo['bro_ver'] = navigator.appVersion;
 			_clientEnvInfo['lang'] = navigator.language;
-			_clientEnvInfo['platform'] = navigator.platform;
-			_clientEnvInfo['userAgent'] = navigator.userAgent;
-
-
-
+			_clientEnvInfo['pf'] = navigator.platform;
+			_clientEnvInfo['ua'] = navigator.userAgent;
 
 			// --- for chrome ---
 			if (navigator.hardwareConcurrency) {
@@ -202,7 +220,7 @@ Date.prototype.format = function(fmt) {
 
 
 			// --- get last referrer url ---
-			var lastReferrer = document.referrer;
+			_this.lastReferrer = document.referrer;
 
 		};
 
@@ -244,8 +262,20 @@ Date.prototype.format = function(fmt) {
 				'hash' : window.location.hash
 			};
 
-			urlHistArray.push(rec);
-			Utils.setLocal(_accHist, urlHistArray);
+
+			if (_this.supportSessionStorage) {
+				// --- save to last url ---
+				Utils.getSession('lastUrl');
+			}
+
+
+			// --- get from cookie ---
+
+
+
+
+			//urlHistArray.push(rec);
+			//Utils.setLocal(_accHist, urlHistArray);
 
 		};
 
@@ -264,29 +294,40 @@ Date.prototype.format = function(fmt) {
 
 
 
-        _this._trackPage = function() {
-
-        };
-
-        _this._trackEvent = function() {
-
-        };
-
 
 		/**
 		 * load and count page view
 		 */
-		_this.sendPageView = function() {
+		var _sendPageView = function() {
+			// --- push to queue
+			var queue = {
+				'dl': window.location.href,
+				't' : 'pageview',
+				'req-time' : new Date().format("yyyy-MM-dd HH:mm:ss"),
+				'cei' : _clientEnvInfo
+			}
+			queue[___USER_ID] = Utils.getCookie(___USER_ID);
+
+
+			var dr = _this.lastReferrer;
+			if (dr) {
+				// --- get from other referrer ----
+				queue['dr'] = dr;
+			}
+
+
+
+			// --- get referrrer ---
+
+			_this.addQueue(queue);
+
+
 
 		};
 		
 		/**
 		 * @param eventRef 事件关联对像
-		 * @param eventCategory 事件分类 {}
-		 * @param eventAction 关注定义事件动作
-		 * @param eventLabel 定义事件标签
-		 * @param eventValue 定义事件传送的值
-		 * 
+		 *
 		 */
 		_this.sendEvent = function(eventRef) {
 
@@ -341,11 +382,6 @@ Date.prototype.format = function(fmt) {
 
 			// --- hitType mapping ---
 
-			//console.log(arguments);
-
-
-
-
 			if (command.indexOf(':') > -1) {
 				// --- get the command message
 
@@ -381,7 +417,7 @@ Date.prototype.format = function(fmt) {
 					if (hitType === 'pageview') {
 
 						// --- mark page view ---
-						_this.sendPageView();
+						_sendPageView();
 
 						// --- fire send page record ---
 						sendToServer();

@@ -18,19 +18,24 @@ var DB = function() {
             _cur_driver_type = 'loki';
         }
 
-        //__lokiContextMap['default-coll'] = lokiDb.addCollection('event-log');
-
 
         _conf = conf;
 
     };
 
-    var __currentSchemeName = '';
-
+    var __currentSchemeName = '', __currentCollection = null;
     _this.setScheme = function(schemeName) {
         if (_cur_driver_type = 'loki') {
-            __lokiContextMap['default-coll'] = lokiDb.addCollection(schemeName);
+
+            // --- get and check collection ---
+            var existedCollection = __lokiContextMap[schemeName];
+            if ( !existedCollection ) {
+                // --- set currentcollection  ---
+                existedCollection = lokiDb.addCollection(schemeName);
+            }
+            __currentCollection = existedCollection;
             __currentSchemeName = schemeName;
+
         }
     };
 
@@ -45,7 +50,7 @@ var DB = function() {
             var listSches = lokiDb.listCollections();
             for (var i = 0 ; i < listSches.length ; i++) {
                 if ( __currentSchemeName != listSches[i]['name'] ) {
-                    schemes.add( listSches[i]['name'] );
+                    schemes.push( listSches[i]['name'] );
                 }
 
             }
@@ -76,7 +81,7 @@ var DB = function() {
         if (typeof value === 'object') {
             value['_idkey'] = key;
         }
-        __lokiContextMap['default-coll'].insert(value);
+        __currentCollection.insert(value);
     };
 
 
@@ -89,7 +94,7 @@ var DB = function() {
     };
 
     _this._get_Loki = function(key) {
-        var result = __lokiContextMap['default-coll'].find({'_idkey': key});
+        var result = __currentCollection.find({'_idkey': key});
         return result;
     }
 
@@ -103,11 +108,48 @@ var DB = function() {
     };
 
     _remove_Loki = function(key) {
-        __lokiContextMap['default-coll'].removeWhere({'_idkey': key});
+        __currentCollection.removeWhere({'_idkey': key});
     };
 
 
     _this.clearAll = function() {
+
+    };
+
+    /**
+     *
+     * @param schemeName 指定特定的 scheme
+     * @param key
+     */
+    _this.getFromScheme = function(schemeName , key) {
+
+        var result = null;
+        if (_cur_driver_type = 'loki') {
+
+            var refColl = __lokiContextMap[schemeName];
+            result = refColl.find({'_idkey': key});
+
+        }
+
+        var result;
+
+    };
+
+    /**
+     *
+     * @param schemeName 指定特定的 scheme
+     */
+    _this.getAllFromScheme = function(schemeName) {
+
+        if (_cur_driver_type = 'loki') {
+
+            var refColl = __lokiContextMap[schemeName];
+            console.log(154);
+
+
+        }
+
+        return [];
 
     }
 

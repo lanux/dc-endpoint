@@ -10,13 +10,29 @@
 
         var TrackerManager = window.TrackerManager;
 
+        /**
+         * 创建的时需要指定特定的来源 ，如是 MA PORTAL , MA APPS , WECHAT , WEBO
+         *
+         * */
+        var _tracker = null;
+        try {
+
+            if (TrackerManager) {
+                _tracker = TrackerManager.create('MA-PORTAL');
+                // 录入 page view
+                _tracker.track('send','pageview');
+            }
 
 
-       var _tracker = TrackerManager.create('UA-XXXXX-Y', 'auto');
+        } catch (e) {
+
+            if (window.console) {
+                window.console.log(e);
+            }
+        }
 
 
 
-        //_tracker.track('send','pageview');
         /*
         _tracker.track('send', {
             hitType:'event',
@@ -24,7 +40,7 @@
             eventAction: 'click'
         });
         */
-        _tracker.track('send', 'event' , 'Images' , 'click' ,'Spring message' , 'spr-msg' );
+        //_tracker.track('send', 'event' , 'Images' , 'click' ,'Spring message' , 'spr-msg' );
        // console.log(_tracker);
 
         //ga('create', 'UA-XXXXX-Y', 'auto');

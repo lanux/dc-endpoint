@@ -6,6 +6,7 @@ var url = require('url');
 var async=require('async');
 var Router = require('node-router');
 var dateFormat = require('dateformat');
+var CronJob = require('cron').CronJob;
 
 // base route
 var router = Router();
@@ -80,20 +81,23 @@ route('/pc-pad/collect/v1' , function(req, res, next) {
     var rightNowStr = dateFormat(now , "yyyy-mm-dd'T'HH:MM:ss.l");
 
     var curFile = getLogFile(now);
-    db.setScheme(curFile);
+
 
 
     var schemes = db.getHisSchemes();
-    console.log(schemes);
+
 
 
     // --- load current file ---
     for (var bodyCont in body) {
         var bodyRef = JSON.parse(bodyCont);
 
-
         for (var i = 0 ; i < bodyRef.length ; i++) {
             var objContent = bodyRef[i];
+
+            var scheprefix = objContent['t'];
+            db.setScheme(scheprefix+"_" + curFile);
+
             objContent['userIp'] = ip;
 
             var docKey = ip + '_' + objContent['userId'] + '_' +rightNowStr;
@@ -164,6 +168,38 @@ var server = http.createServer(router);
 // --- startup server
 server.listen(PORT);
 console.log("Server runing at port: " + PORT + ".");
+
+
+
+// --- start cron job service ---
+var job = new CronJob({
+    cronTime: '* * * * * *',
+    onTick : function () {
+        // --- run event ---
+        var schemes = db.getHisSchemes();
+
+        // --- skip function
+        if (schemes.length == 0 ) {
+            return;
+        }
+
+
+        // --- save cvs ---
+        for (var i  = 0 ; i < schemes.length ; i++) {
+            var allDoc = db.getAllFromScheme(schemes[i]);
+
+
+            // --- append csv or other destion object ---
+
+        }
+
+
+
+
+    },
+    start:false
+});
+job.start();
 
 /*
 var app = express();
