@@ -43,7 +43,7 @@ Date.prototype.format = function(fmt) {
 	}
 	*/
 
-	factory(jQuery);
+	factory(null);
 }(function($, undefined) {
 	"use strict";
 
@@ -429,9 +429,6 @@ Date.prototype.format = function(fmt) {
 						_this.sendEvent(argsAppend);
 
 					}
-
-
-
 
 
 				}
