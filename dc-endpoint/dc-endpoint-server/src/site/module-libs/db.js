@@ -45,15 +45,20 @@ var DB = function() {
     _this.getHisSchemes = function() {
         var schemes = [];
 
+
         if (_cur_driver_type = 'loki') {
 
             var listSches = lokiDb.listCollections();
-            for (var i = 0 ; i < listSches.length ; i++) {
+            if (listSches.length < 1) {
+                return schemes;
+            }
+            for (var i=0;i < listSches.length;i++) {
                 if ( __currentSchemeName != listSches[i]['name'] ) {
                     schemes.push( listSches[i]['name'] );
                 }
-
             }
+
+
 
         }
 

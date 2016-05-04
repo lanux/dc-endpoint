@@ -353,6 +353,35 @@ Date.prototype.format = function(fmt) {
 
 		};
 
+		/**
+		 *
+		 * @param bizRef
+         * @private
+         */
+		_this._sendBiz = function(bizRef) {
+			// --- push to queue ---
+			var queue = {
+				'dl':  window.location.href,
+				't':'biz',
+				'req-time' : new Date().format("yyyy-MM-dd HH:mm:ss"),
+				'bc' : eventRef['bizCategory'],
+				'ba' : eventRef['bizAction']
+			};
+			queue[___USER_ID] = Utils.getCookie(___USER_ID);
+
+			if (eventRef['bizLabel']) {
+				queue['bl'] = eventRef['bizLabel'];
+			}
+
+			if ( eventRef['bizValue'] ) {
+				queue['bv'] = eventRef['bizValue'];
+			}
+
+			_this.addQueue(queue);
+		};
+
+
+
 
 		_this.addQueue = function(queueObj) {
 			//var queStr = JSON.stringify(queueObj);
@@ -378,6 +407,7 @@ Date.prototype.format = function(fmt) {
          */
         _this.track = function(command) {
 
+
 			command = command.toLowerCase();
 
 			// --- hitType mapping ---
@@ -401,6 +431,12 @@ Date.prototype.format = function(fmt) {
 							argsAppend['eventAction'] = hitTypeObj['eventAction'];
 							argsAppend['eventValue'] = hitTypeObj['eventValue'];
 						}
+						else if (hitType === 'biz') {
+							argsAppend['bizCategory'] = hitTypeObj['bizCategory'];
+							argsAppend['bizLabel'] = hitTypeObj['bizLabel'];
+							argsAppend['bizAction'] = hitTypeObj['bizAction'];
+							argsAppend['bizValue'] = hitTypeObj['bizValue'];
+						}
 
 					} else if (typeof arguments[0] === 'string') {
 						hitType = arguments[1];
@@ -409,6 +445,12 @@ Date.prototype.format = function(fmt) {
 							argsAppend['eventAction'] = arguments[2];
 							argsAppend['eventLabel'] = arguments[3];
 							argsAppend['eventValue'] = arguments[4];
+						}
+						else if (hitType === 'biz') {
+							argsAppend['bizCategory'] = arguments[1];
+							argsAppend['bizLabel'] = arguments[2];
+							argsAppend['bizAction'] = arguments[3];
+							argsAppend['bizValue'] = arguments[4];
 						}
 					}
 
@@ -422,12 +464,18 @@ Date.prototype.format = function(fmt) {
 						// --- fire send page record ---
 						sendToServer();
 
+						// --- add new event and mark leave page
+						_leftPageView();
 
 					}
 					// --- add event to handle ---
 					else if (hitType === 'event') {
 						_this.sendEvent(argsAppend);
 
+					}
+					// --- add business event to handle ---
+					else if (hitType === 'biz') {
+						_this._sendBiz(argsAppend);
 					}
 
 
@@ -441,10 +489,18 @@ Date.prototype.format = function(fmt) {
 
 
 			}
-
-
-
         };
+
+		/**
+		 * left page set
+		 * @private
+         */
+		function _leftPageView() {
+			window.beforeunload = function() {
+				console.log(6546);
+			}
+		}
+
 
 		// --- inner method ---
 		function XHR() {
@@ -478,6 +534,7 @@ Date.prototype.format = function(fmt) {
 
 			var queStr = JSON.stringify(___queue);
 
+
 			_xhr.open('POST' , url , true);
 
 			_xhr.onreadystatechange = function(domObj) {
@@ -489,7 +546,7 @@ Date.prototype.format = function(fmt) {
 			};
 
 			_xhr.setRequestHeader('content-type','application/x-www-form-urlencoded');
-			_xhr.send(queStr);
+			_xhr.send( encodeURIComponent(queStr) );
 
 		};
 

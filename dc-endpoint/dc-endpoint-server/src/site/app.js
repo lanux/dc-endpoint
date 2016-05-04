@@ -81,11 +81,7 @@ route('/pc-pad/collect/v1' , function(req, res, next) {
     var rightNowStr = dateFormat(now , "yyyy-mm-dd'T'HH:MM:ss.l");
 
     var curFile = getLogFile(now);
-
-
-
     var schemes = db.getHisSchemes();
-
 
 
     // --- load current file ---
@@ -104,51 +100,11 @@ route('/pc-pad/collect/v1' , function(req, res, next) {
 
             // --- put to level db ---
             db.put(docKey, objContent);
-            /*
-
-            var result = db.get( ip + '_' + objContent['userId'] +  '_' +rightNowStr );
-
-
-            db.delete(ip + '_' + objContent['userId'] + '_' +rightNowStr);
-
-            var rresult = db.get( ip + '_' + objContent['userId'] + '_' +rightNowStr );
-
-            console.log( rresult );
-            */
-
-
-            /*
-            db.put(ip + '_' + bodyRef['userId'] + '-time' , bodyCont  , function (err) {
-                if (err) return console.log('Ooops!', err);
-
-                db.get( ip + '_' + bodyRef['userId'] + '-time' , function(err, value)  {
-
-                    console.log('name= ' + value);
-                });
-
-            });
-            */
-
 
         }
 
     }
-
-
-
     // --- access data rem ---
-    /*
-    req.on('data', function(chunk) {
-        body += chunk;
-    });
-
-
-    req.on('end' , function() {
-        console.log('accect body : ' + body);
-    });
-    */
-
-
 
     // --- response service ---
     var result = {
@@ -172,8 +128,9 @@ console.log("Server runing at port: " + PORT + ".");
 
 
 // --- start cron job service ---
+
 var job = new CronJob({
-    cronTime: '* * * * * *',
+    cronTime: '5 * * * * *',
     onTick : function () {
         // --- run event ---
         var schemes = db.getHisSchemes();
@@ -182,11 +139,12 @@ var job = new CronJob({
         if (schemes.length == 0 ) {
             return;
         }
-
+        console.log("-----------");
 
         // --- save cvs ---
-        for (var i  = 0 ; i < schemes.length ; i++) {
+        for (var i = 0 ; i < schemes.length ; i++) {
             var allDoc = db.getAllFromScheme(schemes[i]);
+            console.log(allDoc);
 
 
             // --- append csv or other destion object ---
