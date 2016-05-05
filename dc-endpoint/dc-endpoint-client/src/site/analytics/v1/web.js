@@ -537,9 +537,8 @@ Date.prototype.format = function(fmt) {
 
             window.onbeforeunload = function(evt) {
 
-
                 // --- sent event handle ---
-                var ori = evt['originalTarget'];
+                var ori = evt['target'];
                 var timeStamp = evt.timeStamp;
                 var charset = ori.charset;
 
@@ -600,9 +599,10 @@ Date.prototype.format = function(fmt) {
             if (arg.lock) {
                 return;
             }
+            _xhr.method = arg.method;
 
             // --- sent to server ---
-            sendToServer();
+            sendToServer(_xhr);
 
 
         };
@@ -619,30 +619,25 @@ Date.prototype.format = function(fmt) {
         // --- send to server ----
         var sendToServer = function() {
 
-
-
-            var url = _this.host + _devicePath['pc'] +  _pathMap['COLLECT'] + _version;
-
+            var _localXhr = arguments[0];
+            var url = _this.host + _devicePath['pc'] +  _pathMap['COLLECT'] + _version + '?' + _localXhr.method;
             if (___queue.length == 0) {
                 return ;
             }
 
-            // --- check the lock  ,if lock , not invoke message ---
 
+            // --- check the lock  ,if lock , not invoke message ---
             var queStr = JSON.stringify(___queue);
 
+            _localXhr.open('POST' , url , true);
 
-            _xhr.open('POST' , url , true);
+            _localXhr.onreadystatechange = function(domObj) {
 
-            _xhr.onreadystatechange = function(domObj) {
-
-
-
-                // --- request complete  ---
-                if (_xhr.readyState == 4) {
+               // --- request complete  ---
+                if (_localXhr.readyState == 4) {
                     // --- remote queue ---
-                    if (_xhr.status == 200) {
-                        _xhrReqLock = 0;
+                    if (_localXhr.status == 200) {
+                        _localXhr.locked = 0;
                         // ---  success message ---
                         ___queue =  [];
                     }
@@ -650,14 +645,17 @@ Date.prototype.format = function(fmt) {
 
                 }
                 // --- not init method
-                else if (_xhr.readyState > 0 && _xhr.readyState != 4) {
-                    _xhrReqLock = 1;
+                else if (_localXhr.readyState != 4) {
+                    _localXhr.locked = 1;
                 }
+
+                console.log('local message : ' + _localXhr.method);
+
             };
 
-            _xhr.setRequestHeader('content-type','application/x-www-form-urlencoded');
-
-            _xhr.send( encodeURIComponent(queStr) );
+            _localXhr.setRequestHeader('content-type','application/x-www-form-urlencoded');
+            // --- fire event ---
+            _localXhr.send( encodeURIComponent(queStr) );
 
         };
 
@@ -665,7 +663,7 @@ Date.prototype.format = function(fmt) {
 
         // --- trigger scheudler ---
         try {
-            var iId = setInterval(sendToServer , 5000);
+            var iId = setInterval(sendToServer , 5000 , _localXhr);
         } catch (Error) {
 
             //console.log(Error);
