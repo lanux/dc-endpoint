@@ -20,9 +20,6 @@ var db = require('./module-libs/db');
 db.config({
     'driver-type':'loki'
 });
-//var users = require('./routes/users');
-
-
 
 // ---- add middleware (optional ----
 route( cookieParser() );
@@ -44,7 +41,9 @@ function getLogFile(dateInput) {
     var prefile = dateFormat(dateInput , "yyyymmddHH");
     var min = dateFormat(dateInput , "MM");
     var minVal = parseInt(min);
-    var subFileMsg = '';
+    var subFileMsg = min;
+    //var subFileMsg = '';
+    /*
     if (minVal > 0 && minVal <= 10) {
         subFileMsg = '1';
     } else if (minVal > 10 && minVal <= 20) {
@@ -58,6 +57,7 @@ function getLogFile(dateInput) {
     } else if (minVal > 50 && minVal <= 59) {
         subFileMsg = '6';
     }
+    */
 
     return prefile+'_'+subFileMsg;
 }
@@ -97,6 +97,7 @@ route('/pc-pad/collect/v1' , function(req, res, next) {
             objContent['userIp'] = ip;
 
             var docKey = ip + '_' + objContent['userId'] + '_' +rightNowStr;
+            console.log(objContent);
 
             // --- put to level db ---
             db.put(docKey, objContent);
@@ -114,6 +115,10 @@ route('/pc-pad/collect/v1' , function(req, res, next) {
 
     res.end(JSON.stringify(result));
 
+    var lastDate = new Date();
+    console.log('handle time : ' + (lastDate.getTime() - now.getTime()));
+
+
 })
 
 /**
@@ -128,9 +133,8 @@ console.log("Server runing at port: " + PORT + ".");
 
 
 // --- start cron job service ---
-
 var job = new CronJob({
-    cronTime: '5 * * * * *',
+    cronTime: '0 */1 * * * *',
     onTick : function () {
         // --- run event ---
         var schemes = db.getHisSchemes();
@@ -139,15 +143,14 @@ var job = new CronJob({
         if (schemes.length == 0 ) {
             return;
         }
-        console.log("-----------");
+
 
         // --- save cvs ---
         for (var i = 0 ; i < schemes.length ; i++) {
             var allDoc = db.getAllFromScheme(schemes[i]);
-            console.log(allDoc);
-
 
             // --- append csv or other destion object ---
+
 
         }
 
@@ -158,50 +161,3 @@ var job = new CronJob({
     start:false
 });
 job.start();
-
-/*
-var app = express();
-
-app.use(logger('dev'));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
-
-app.use('/', routes);
-app.use('/users', users);
-
-// catch 404 and forward to error handler
-app.use(function(req, res, next) {
-  var err = new Error('Not Found');
-  err.status = 404;
-  next(err);
-});
-
-// error handlers
-
-// development error handler
-// will print stacktrace
-if (app.get('env') === 'development') {
-  app.use(function(err, req, res, next) {
-    res.status(err.status || 500);
-    res.render('error', {
-      message: err.message,
-      error: err
-    });
-  });
-}
-
-// production error handler
-// no stacktraces leaked to user
-app.use(function(err, req, res, next) {
-  res.status(err.status || 500);
-  res.render('error', {
-    message: err.message,
-    error: {}
-  });
-});
-
-
-module.exports = app;
-*/

@@ -149,8 +149,6 @@ var DB = function() {
         if (_cur_driver_type = 'loki') {
 
             var refColl = __lokiContextMap[schemeName];
-            console.log(154);
-
 
         }
 
