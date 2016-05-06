@@ -18,7 +18,8 @@ var PORT = 3000;
 
 var db = require('./module-libs/db');
 db.config({
-    'driver-type':'loki'
+    'driver-type':'file',
+    'base-dir':__dirname
 });
 
 // ---- add middleware (optional ----
@@ -97,7 +98,6 @@ route('POST' , '/web/collect/v1' , function(req, res, next) {
             objContent['userIp'] = ip;
 
             var docKey = ip + '_' + objContent['userId'] + '_' +rightNowStr;
-            console.log(objContent);
 
             // --- put to level db ---
             db.put(docKey, objContent);
@@ -151,7 +151,6 @@ route('GET' , '/web/collect/v1' , function(req, res, next) {
         objContent['userIp'] = ip;
 
         var docKey = ip + '_' + objContent['userId'] + '_' +rightNowStr;
-        console.log(objContent);
 
         // --- put to level db ---
         db.put(docKey, objContent);
@@ -159,21 +158,14 @@ route('GET' , '/web/collect/v1' , function(req, res, next) {
     }
 
 
-
-
-
-
-
     // --- response service ---
     var result = {
         success:true,
         msg:'OK'
     }
-
     res.end("window."+_inst + ".callbackByScriptTag("+JSON.stringify(result)+");");
-
     var lastDate = new Date();
-    console.log('handle time : ' + (lastDate.getTime() - now.getTime()));
+    console.log('handle time : ' + ip + ',' + (lastDate.getTime() - now.getTime()));
 });
 
 
@@ -207,12 +199,15 @@ var job = new CronJob({
             return;
         }
 
+        console.log(schemes);
+
 
         // --- save cvs ---
         for (var i = 0 ; i < schemes.length ; i++) {
             var allDoc = db.getAllFromScheme(schemes[i]);
 
             // --- append csv or other destion object ---
+            console.log(allDoc);
 
 
         }

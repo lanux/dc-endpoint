@@ -1,5 +1,7 @@
 var loki = require('lokijs');
+var fs = require("fs");
 var lokiDb = new loki('loki.json');
+
 
 
 var DB = function() {
@@ -12,20 +14,41 @@ var DB = function() {
 
     var __lokiContextMap = {};
 
+    var _basedir = '.';
+
     _this.config = function(conf) {
 
         if (conf['driver-type'] == 'loki') {
             _cur_driver_type = 'loki';
         }
+        else if (conf['driver-type'] == 'file') {
+            _cur_driver_type = 'file';
+            if (!conf['base-dir']) {
+                throw new Error('Please set parameter "base-dir"');
+            }
 
+            _basedir = conf['base-dir'] + '/tracker';
+            fs.exists(_basedir , (exists) => {
+                if (!exists)  {
+                    fs.mkdir(_basedir, 777 , function(err , folder) {
+                        if (err) {
+                            throw err;
+                        }
+                    });
+                }
+            });
+
+        }
 
         _conf = conf;
 
     };
 
     var __currentSchemeName = '', __currentCollection = null;
+
+    var __currentFile = '';
     _this.setScheme = function(schemeName) {
-        if (_cur_driver_type = 'loki') {
+        if (_cur_driver_type == 'loki') {
 
             // --- get and check collection ---
             var existedCollection = __lokiContextMap[schemeName];
@@ -34,9 +57,12 @@ var DB = function() {
                 existedCollection = lokiDb.addCollection(schemeName);
             }
             __currentCollection = existedCollection;
-            __currentSchemeName = schemeName;
 
         }
+        else if (_cur_driver_type == 'file') {
+            __currentFile = schemeName + '.txt';
+        }
+        __currentSchemeName = schemeName;
     };
 
     /**
@@ -45,8 +71,7 @@ var DB = function() {
     _this.getHisSchemes = function() {
         var schemes = [];
 
-
-        if (_cur_driver_type = 'loki') {
+        if (_cur_driver_type == 'loki') {
 
             var listSches = lokiDb.listCollections();
             if (listSches.length < 1) {
@@ -73,12 +98,51 @@ var DB = function() {
 
     _this.put = function(key , value ) {
 
-        if (_cur_driver_type = 'loki') {
+        if (_cur_driver_type == 'loki') {
             _this._put_Loki(key , value );
         }
+        else if (_cur_driver_type == 'file') {
+            _put_File(key , value);
+        }
+    };
+
+    /**
+     * use put file api
+     * @param key
+     * @param value
+     * @private
+     */
+    _put_File = function(key , value) {
+        var linecontent = key + '=>' + JSON.stringify(value)+'\r\n';
+        var path = _basedir + '/'+ __currentFile;
+
+        fs.exists(path , (exists) => {
+            if (exists)  {
+
+                fs.appendFile(path , linecontent , {encoding:'utf-8'} , function(err) {
+                    if (err) {
+                        console.log(err);
+                    }
+                    console.log('Append key : "' + key +'" saved.');
+                });
+
+            } else {
+
+                fs.writeFile(path , linecontent , {encoding:'utf-8'} , function(err) {
+                    if (err) {
+                        console.log(err);
+                    }
+                    console.log('Create key : "' + key +'" saved.');
+                });
+
+            }
+
+        });
+
 
 
     };
+
 
 
     _this._put_Loki = function(key , value) {
