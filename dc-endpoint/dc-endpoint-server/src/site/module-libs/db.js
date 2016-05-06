@@ -1,7 +1,4 @@
-var loki = require('lokijs');
 var fs = require("fs");
-var lokiDb = new loki('loki.json');
-
 
 
 var DB = function() {
@@ -18,17 +15,14 @@ var DB = function() {
 
     _this.config = function(conf) {
 
-        if (conf['driver-type'] == 'loki') {
-            _cur_driver_type = 'loki';
-        }
-        else if (conf['driver-type'] == 'file') {
+         if (conf['driver-type'] == 'file') {
             _cur_driver_type = 'file';
             if (!conf['base-dir']) {
                 throw new Error('Please set parameter "base-dir"');
             }
 
             _basedir = conf['base-dir'] + '/tracker';
-            fs.exists(_basedir , (exists) => {
+            fs.exists(_basedir , function(exists) {
                 if (!exists)  {
                     fs.mkdir(_basedir, 777 , function(err , folder) {
                         if (err) {
@@ -44,25 +38,28 @@ var DB = function() {
 
     };
 
-    var __currentSchemeName = '', __currentCollection = null;
+    var __currentSchemeName = '', __currentFile = '';
 
-    var __currentFile = '';
     _this.setScheme = function(schemeName) {
-        if (_cur_driver_type == 'loki') {
 
-            // --- get and check collection ---
-            var existedCollection = __lokiContextMap[schemeName];
-            if ( !existedCollection ) {
-                // --- set currentcollection  ---
-                existedCollection = lokiDb.addCollection(schemeName);
-            }
-            __currentCollection = existedCollection;
-
-        }
-        else if (_cur_driver_type == 'file') {
+        if (_cur_driver_type == 'file') {
             __currentFile = schemeName + '.txt';
+
+            // --- set lock file message ---
+            var path = _basedir + '/lock';
+
+            fs.writeFile(path , __currentFile , {encoding:'utf-8'} , function(err) {
+                if (err) {
+                    console.log(err);
+                }
+            });
+
         }
         __currentSchemeName = schemeName;
+
+
+
+
     };
 
     /**
@@ -98,10 +95,7 @@ var DB = function() {
 
     _this.put = function(key , value ) {
 
-        if (_cur_driver_type == 'loki') {
-            _this._put_Loki(key , value );
-        }
-        else if (_cur_driver_type == 'file') {
+        if (_cur_driver_type == 'file') {
             _put_File(key , value);
         }
     };
@@ -116,8 +110,8 @@ var DB = function() {
         var linecontent = key + '=>' + JSON.stringify(value)+'\r\n';
         var path = _basedir + '/'+ __currentFile;
 
-        fs.exists(path , (exists) => {
-            if (exists)  {
+        fs.exists(path , function(exists) {
+            if (exists) {
 
                 fs.appendFile(path , linecontent , {encoding:'utf-8'} , function(err) {
                     if (err) {
@@ -136,48 +130,56 @@ var DB = function() {
                 });
 
             }
+        });
+    };
 
+    function _get_File(key ,handler) {
+        var path = _basedir + '/'+ __currentFile;
+        fs.exists(path , function(exists) {
+            if (exists) {
+
+                fs.readFile(path , 'utf8', function(err ,data) {
+                    if (err) {
+                        console.log(err);
+                    }
+
+                    if (handler) {
+                        handler(data);
+                    }
+
+
+                });
+
+            }
         });
 
-
-
     };
 
 
 
-    _this._put_Loki = function(key , value) {
-        // --- append key entry ---
-        if (typeof value === 'object') {
-            value['_idkey'] = key;
-        }
-        __currentCollection.insert(value);
-    };
-
-
-    _this.get = function(key) {
+    _this.get = function(key ,  handler) {
         var result = null;
-        if (_cur_driver_type = 'loki') {
-            result = _this._get_Loki(key);
+        if (_cur_driver_type = 'file') {
+            result = _get_File(key , handler);
         }
         return result;
     };
 
-    _this._get_Loki = function(key) {
-        var result = __currentCollection.find({'_idkey': key});
-        return result;
-    }
 
-
+    /**
+     * delete entry by key
+     * @param key
+     */
     _this.delete = function(key) {
 
-        if (_cur_driver_type = 'loki') {
-            _remove_Loki(key);
+        if (_cur_driver_type = 'file') {
+            _remove_File(key);
         }
 
     };
 
-    _remove_Loki = function(key) {
-        __currentCollection.removeWhere({'_idkey': key});
+    _remove_File = function(key) {
+
     };
 
 

@@ -214,8 +214,8 @@
             }
 
             // --- reset screen size ---
-            _clientEnvInfo['scr'] = screen.width + 'x' + screen.height ;
-            _clientEnvInfo['scr_avai'] = screen.availWidth + 'x' + screen.availHeight;
+            _clientEnvInfo['sr'] = screen.width + 'x' + screen.height ;
+            _clientEnvInfo['vp'] = screen.availWidth + 'x' + screen.availHeight;
 
 
             // --- get last referrer url ---
@@ -282,10 +282,12 @@
         /**
          * load and count page view
          */
-        var _sendPageView = function() {
+        var _sendPageView = function(pageRef) {
             // --- push to queue
             var queue = {
-                'dl': window.location.href,
+                'dp': pageRef['page'],
+                'dh' : document.location.origin,
+                'ds' : document.location.search,
                 't' : 'pageview',
                 'pa' : 'in',
                 'req-time' : Utils.dateformat(new Date(),"yyyy-MM-dd HH:mm:ss")
@@ -298,6 +300,16 @@
                 // --- get from other referrer ----
                 queue['dr'] = dr;
             }
+
+            // --- append title ---
+            if (pageRef['title']) {
+                queue['title'] = pageRef['title'];
+            }
+
+            if (pageRef['ul']) {
+                queue['ul'] = pageRef['ul'];
+            }
+
 
             // --- get referrrer ---
             _this.addQueue(queue);
@@ -467,20 +479,26 @@
                             argsAppend['bizAction'] = hitTypeObj['bizAction'];
                             argsAppend['bizValue'] = hitTypeObj['bizValue'];
                         }
+                        else if (hitType === 'pageview') {
+                            argsAppend['page'] = hitTypeObj['page'];
+                        }
 
                     } else if (typeof arguments[1] === 'string') {
                         hitType = arguments[1];
                         if (hitType === 'event') {
-                            argsAppend['eventCategory'] = arguments[1];
-                            argsAppend['eventAction'] = arguments[2];
-                            argsAppend['eventLabel'] = arguments[3];
-                            argsAppend['eventValue'] = arguments[4];
+                            argsAppend['eventCategory'] = arguments[2];
+                            argsAppend['eventAction'] = arguments[3];
+                            argsAppend['eventLabel'] = arguments[4];
+                            argsAppend['eventValue'] = arguments[5];
                         }
                         else if (hitType === 'biz') {
-                            argsAppend['bizCategory'] = arguments[1];
-                            argsAppend['bizLabel'] = arguments[2];
-                            argsAppend['bizAction'] = arguments[3];
-                            argsAppend['bizValue'] = arguments[4];
+                            argsAppend['bizCategory'] = arguments[2];
+                            argsAppend['bizLabel'] = arguments[3];
+                            argsAppend['bizAction'] = arguments[4];
+                            argsAppend['bizValue'] = arguments[5];
+                        }
+                        else if (hitType === 'pageview') {
+                            argsAppend['page'] = arguments[2];
                         }
                     }
 
@@ -488,11 +506,15 @@
                     // --- invoke hit type event ---
                     if (hitType === 'pageview') {
 
+                        if (!argsAppend['page']) {
+                            argsAppend['page'] = location.pathname;
+                        }
+
                         // --- mark page view ---
-                        _sendPageView();
+                        _sendPageView(argsAppend);
 
                         // --- add new event and mark leave page ---
-                        _leavePageView();
+                        _leavePageView(argsAppend);
                         // --- fire send page record ---
 
                     }

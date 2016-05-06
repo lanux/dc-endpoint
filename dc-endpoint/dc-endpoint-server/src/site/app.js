@@ -6,7 +6,6 @@ var url = require('url');
 var async=require('async');
 var Router = require('node-router');
 var dateFormat = require('dateformat');
-var CronJob = require('cron').CronJob;
 
 // base route
 var router = Router();
@@ -42,9 +41,8 @@ function getLogFile(dateInput) {
     var prefile = dateFormat(dateInput , "yyyymmddHH");
     var min = dateFormat(dateInput , "MM");
     var minVal = parseInt(min);
-    var subFileMsg = min;
-    //var subFileMsg = '';
-    /*
+    var subFileMsg = '';
+
     if (minVal > 0 && minVal <= 10) {
         subFileMsg = '1';
     } else if (minVal > 10 && minVal <= 20) {
@@ -58,8 +56,6 @@ function getLogFile(dateInput) {
     } else if (minVal > 50 && minVal <= 59) {
         subFileMsg = '6';
     }
-    */
-
     return prefile+'_'+subFileMsg;
 }
 
@@ -93,11 +89,11 @@ route('POST' , '/web/collect/v1' , function(req, res, next) {
             var objContent = bodyRef[i];
 
             var scheprefix = objContent['t'];
-            db.setScheme(scheprefix+"_" + curFile);
+            db.setScheme(curFile);
 
             objContent['userIp'] = ip;
 
-            var docKey = ip + '_' + objContent['userId'] + '_' +rightNowStr;
+            var docKey = ip + '_' + objContent['cid'] + '_' +rightNowStr;
 
             // --- put to level db ---
             db.put(docKey, objContent);
@@ -144,16 +140,16 @@ route('GET' , '/web/collect/v1' , function(req, res, next) {
 
     for (var i = 0 ; i < bodyRef.length ; i++) {
         var objContent = bodyRef[i];
-
         var scheprefix = objContent['t'];
-        db.setScheme(scheprefix+"_" + curFile);
+        db.setScheme(curFile);
 
         objContent['userIp'] = ip;
 
-        var docKey = ip + '_' + objContent['userId'] + '_' +rightNowStr;
+        var docKey = ip + '_' + objContent['cid'] + '_' +rightNowStr;
 
         // --- put to level db ---
         db.put(docKey, objContent);
+        console.log('out : ' + p);
 
     }
 
@@ -184,38 +180,3 @@ var server = http.createServer(router);
 // --- startup server
 server.listen(PORT);
 console.log("Server runing at port: " + PORT + ".");
-
-
-
-// --- start cron job service ---
-var job = new CronJob({
-    cronTime: '0 */1 * * * *',
-    onTick : function () {
-        // --- run event ---
-        var schemes = db.getHisSchemes();
-
-        // --- skip function
-        if (schemes.length == 0 ) {
-            return;
-        }
-
-        console.log(schemes);
-
-
-        // --- save cvs ---
-        for (var i = 0 ; i < schemes.length ; i++) {
-            var allDoc = db.getAllFromScheme(schemes[i]);
-
-            // --- append csv or other destion object ---
-            console.log(allDoc);
-
-
-        }
-
-
-
-
-    },
-    start:false
-});
-job.start();
