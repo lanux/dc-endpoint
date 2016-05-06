@@ -66,7 +66,7 @@ function getLogFile(dateInput) {
 /**
  * receive data from client endpoint
  */
-route('/pc-pad/collect/v1' , function(req, res, next) {
+route('POST' , '/web/collect/v1' , function(req, res, next) {
 
     res.writeHead(200, {
         "content-type":"text/plain",
@@ -117,9 +117,72 @@ route('/pc-pad/collect/v1' , function(req, res, next) {
 
     var lastDate = new Date();
     console.log('handle time : ' + (lastDate.getTime() - now.getTime()));
+});
 
 
-})
+/**
+ *  get handle data
+ */
+route('GET' , '/web/collect/v1' , function(req, res, next) {
+
+    res.writeHead(200, {
+        "content-type":"text/plain",
+        "Access-Control-Allow-Origin":"*"
+    });
+
+    var ip = getClientIp(req);
+
+    var now = new Date();
+    var rightNowStr = dateFormat(now , "yyyy-mm-dd'T'HH:MM:ss.l");
+
+    var curFile = getLogFile(now);
+    var schemes = db.getHisSchemes();
+    var _inst = req.query['_i'];
+    var data = req.query['_td'];
+
+    var bodyRef = JSON.parse(data);
+
+    for (var i = 0 ; i < bodyRef.length ; i++) {
+        var objContent = bodyRef[i];
+
+        var scheprefix = objContent['t'];
+        db.setScheme(scheprefix+"_" + curFile);
+
+        objContent['userIp'] = ip;
+
+        var docKey = ip + '_' + objContent['userId'] + '_' +rightNowStr;
+        console.log(objContent);
+
+        // --- put to level db ---
+        db.put(docKey, objContent);
+
+    }
+
+
+
+
+
+
+
+    // --- response service ---
+    var result = {
+        success:true,
+        msg:'OK'
+    }
+
+    res.end("window."+_inst + ".callbackByScriptTag("+JSON.stringify(result)+");");
+
+    var lastDate = new Date();
+    console.log('handle time : ' + (lastDate.getTime() - now.getTime()));
+});
+
+
+
+
+
+
+
+
 
 /**
  * create server define

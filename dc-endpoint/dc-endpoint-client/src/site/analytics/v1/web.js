@@ -5,28 +5,6 @@
 /**
  * append function function
  */
-Date.prototype.format = function(fmt) {
-    var o = {
-        "M+" : this.getMonth()+1,                 //月份
-        "d+" : this.getDate(),                    //日
-        "H+" : this.getHours(),                   //小时
-        "m+" : this.getMinutes(),                 //分
-        "s+" : this.getSeconds(),                 //秒
-        "q+" : Math.floor((this.getMonth()+3)/3), //季度
-        "S"  : this.getMilliseconds()             //毫秒
-    };
-
-    if(/(y+)/.test(fmt)) {
-        fmt=fmt.replace(RegExp.$1, (this.getFullYear()+"").substr(4 - RegExp.$1.length));
-    }
-
-    for(var k in o) {
-        if(new RegExp("("+ k +")").test(fmt)) {
-            fmt = fmt.replace(RegExp.$1, (RegExp.$1.length==1) ? (o[k]) : (("00"+ o[k]).substr((""+ o[k]).length)));
-        }
-    }
-    return fmt;
-};
 
 
 (function (factory) {
@@ -46,11 +24,6 @@ Date.prototype.format = function(fmt) {
     factory(null);
 }(function($, undefined) {
     "use strict";
-
-
-
-    // ---- client info object ---
-
 
     // ---- utils object ----
     var Utils = function() {
@@ -113,14 +86,45 @@ Date.prototype.format = function(fmt) {
         return result;
     }
 
-
-
-
     Utils.removeLocal = function(key) {
         var result = window.localStorage.removeItem(key);
         return result;
-    }
+    };
 
+    Utils.checkBrowser = function() {
+        var ua = navigator.userAgent, bro = 'unknown' ;
+
+        if (ua.indexOf('Trident/') > -1) {
+            bro = 'MSIE';
+        }
+
+        return bro;
+
+    };
+
+    Utils.dateformat = function(date , fmt) {
+        var o = {
+            "M+" : date.getMonth()+1,                 //月份
+            "d+" : date.getDate(),                    //日
+            "H+" : date.getHours(),                   //小时
+            "m+" : date.getMinutes(),                 //分
+            "s+" : date.getSeconds(),                 //秒
+            "q+" : Math.floor((date.getMonth()+3)/3), //季度
+            "S"  : date.getMilliseconds()             //毫秒
+        };
+
+        if(/(y+)/.test(fmt)) {
+            fmt=fmt.replace(RegExp.$1, (date.getFullYear()+"").substr(4 - RegExp.$1.length));
+        }
+
+
+        for(var k in o) {
+            if(new RegExp("("+ k +")").test(fmt)) {
+                fmt = fmt.replace(RegExp.$1, (RegExp.$1.length==1) ? (o[k]) : (("00"+ o[k]).substr((""+ o[k]).length)));
+            }
+        }
+        return fmt;
+    };
 
 
 
@@ -169,7 +173,7 @@ Date.prototype.format = function(fmt) {
 
 
     // set the tracker class ---
-    var Tracker = function() {
+    var Tracker = function(_instId) {
         var ___ACC_NAME = "uid", ___USER_ID = "cid", ___DATA_REFERRER = "dr", __SCREEN_RE;
 
         var _this = this;
@@ -179,12 +183,11 @@ Date.prototype.format = function(fmt) {
         _this.host = 'http://localhost:3000';
 
         var _devicePath = {
-            'pc':'/pc-pad',
+            'pc':'/web',
             'mobile':'/mobile'
         }, _pathMap = {
             'COLLECT':'/collect'
         }, _version = '/v1';
-
 
 
         var _curPageInfo = {};
@@ -199,9 +202,8 @@ Date.prototype.format = function(fmt) {
         _this.loadPageInfo = function() {
 
             // --- get client nav info ---
-            _clientEnvInfo['bro-acn'] = navigator.appCodeName;
+            _clientEnvInfo['bro_acn'] = navigator.appCodeName;
             _clientEnvInfo['bro_name'] = navigator.appName;
-            _clientEnvInfo['bro_ver'] = navigator.appVersion;
             _clientEnvInfo['lang'] = navigator.language;
             _clientEnvInfo['pf'] = navigator.platform;
             _clientEnvInfo['ua'] = navigator.userAgent;
@@ -212,11 +214,8 @@ Date.prototype.format = function(fmt) {
             }
 
             // --- reset screen size ---
-            _clientEnvInfo['scr_h'] = screen.height;
-            _clientEnvInfo['scr_w'] = screen.width;
-            _clientEnvInfo['scr_avai_h'] = screen.availHeight;
-            _clientEnvInfo['scr_avai_w'] = screen.availWidth;
-
+            _clientEnvInfo['scr'] = screen.width + 'x' + screen.height ;
+            _clientEnvInfo['scr_avai'] = screen.availWidth + 'x' + screen.availHeight;
 
 
             // --- get last referrer url ---
@@ -254,7 +253,7 @@ Date.prototype.format = function(fmt) {
 
             // --- put url Hist tp local store ---
             var rec = {
-                'req-time' : new Date().format("yyyy-MM-dd HH:mm:ss"),
+                'req-time' : Utils.dateformat(new Date(),"yyyy-MM-dd HH:mm:ss"),
                 'url' : window.location.href,
                 'origin' : window.location.origin,
                 'pathname' : window.location.pathname,
@@ -280,10 +279,6 @@ Date.prototype.format = function(fmt) {
         };
 
 
-
-
-
-
         /**
          * load and count page view
          */
@@ -293,8 +288,7 @@ Date.prototype.format = function(fmt) {
                 'dl': window.location.href,
                 't' : 'pageview',
                 'pa' : 'in',
-                'req-time' : new Date().format("yyyy-MM-dd HH:mm:ss"),
-                'cei' : _clientEnvInfo
+                'req-time' : Utils.dateformat(new Date(),"yyyy-MM-dd HH:mm:ss")
             }
             queue[___USER_ID] = Utils.getCookie(___USER_ID);
 
@@ -308,10 +302,7 @@ Date.prototype.format = function(fmt) {
             // --- get referrrer ---
             _this.addQueue(queue);
 
-            _triggerSendToServer({
-                lock : _xhr.locked,
-                method : '_sendPageView'
-            });
+            _triggerSendToServer({});
 
 
         };
@@ -328,9 +319,9 @@ Date.prototype.format = function(fmt) {
                 'ol': pageOutRef['url'],
                 't' : 'pageview',
                 'pa' : 'out',
+                'timestamp' : pageOutRef['timestamp'],
                 'charset' : pageOutRef['charset'],
-                'req-time' : pageOutRef['leavetime'],
-                'cei' : _clientEnvInfo
+                'req-time' : pageOutRef['lt']
             }
             queue[___USER_ID] = Utils.getCookie(___USER_ID);
 
@@ -362,13 +353,15 @@ Date.prototype.format = function(fmt) {
          * @param eventRef 事件关联对像
          *
          */
-        _this.sendEvent = function(eventRef) {
+        function _sendEvent(eventRef) {
+
+            var rt = new Date();
 
             // --- push to queue ---
             var queue = {
                 'dl':  window.location.href,
                 't':'event',
-                'req-time' : new Date().format("yyyy-MM-dd HH:mm:ss"),
+                'req-time':Utils.dateformat(new Date(),"yyyy-MM-dd HH:mm:ss.S"),
                 'ec' : eventRef['eventCategory'],
                 'ea' : eventRef['eventAction']
             };
@@ -381,7 +374,6 @@ Date.prototype.format = function(fmt) {
             if ( eventRef['eventValue'] ) {
                 queue['ev'] = eventRef['eventValue'];
             }
-
             _this.addQueue(queue);
 
         };
@@ -396,7 +388,7 @@ Date.prototype.format = function(fmt) {
             var queue = {
                 'dl':  window.location.href,
                 't':'biz',
-                'req-time' : new Date().format("yyyy-MM-dd HH:mm:ss"),
+                'req-time' : Utils.dateformat(new Date(),"yyyy-MM-dd HH:mm:ss"),
                 'bc' : eventRef['bizCategory'],
                 'ba' : eventRef['bizAction']
             };
@@ -430,6 +422,10 @@ Date.prototype.format = function(fmt) {
         };
 
 
+
+
+
+
         /**
          *
          * @param command
@@ -453,12 +449,13 @@ Date.prototype.format = function(fmt) {
                 // --- use  default plugin ---
 
                 if (command === 'send') {
-                    var hitTypeObj = arguments[0];
+                    var hitTypeObj = arguments[1];
                     var hitType = "";
                     var argsAppend = {};
-                    if (typeof arguments[0] === 'object') {
+
+                    if (typeof arguments[1] === 'object') {
                         hitType = hitTypeObj['hitType'];
-                        if (hitType === 'event') {
+                        if (hitType == 'event') {
                             argsAppend['eventCategory'] = hitTypeObj['eventCategory'];
                             argsAppend['eventLabel'] = hitTypeObj['eventLabel'];
                             argsAppend['eventAction'] = hitTypeObj['eventAction'];
@@ -471,7 +468,7 @@ Date.prototype.format = function(fmt) {
                             argsAppend['bizValue'] = hitTypeObj['bizValue'];
                         }
 
-                    } else if (typeof arguments[0] === 'string') {
+                    } else if (typeof arguments[1] === 'string') {
                         hitType = arguments[1];
                         if (hitType === 'event') {
                             argsAppend['eventCategory'] = arguments[1];
@@ -506,7 +503,8 @@ Date.prototype.format = function(fmt) {
 
                     // --- add event to handle ---
                     else if (hitType === 'event') {
-                        _this.sendEvent(argsAppend);
+
+                        _sendEvent(argsAppend);
 
                     }
                     // --- add business event to handle ---
@@ -543,27 +541,32 @@ Date.prototype.format = function(fmt) {
                 var charset = ori.charset;
 
                 var leaveTime = new Date();
-                leaveTime.setTime( timeStamp );
+                //leaveTime.setMilliseconds(timeStamp);
+                //leaveTime.setTime( timeStamp );
 
 
                 var pageOutRef = {
-                    'url': ori.URL,
                     'charset': charset,
-                    'leavetime':leaveTime.format("yyyy-MM-dd HH:mm:ss")
+                    'timestamp' : timeStamp,
+                    'lt':Utils.dateformat(new Date() , "yyyy-MM-dd HH:mm:ss")
                 };
+
+                var browser = Utils.checkBrowser();
+
+
+                if (browser == 'MSIE') {
+                    pageOutRef['url'] = window.location.href;
+                } else {
+                    pageOutRef['url'] = ori.URL;
+                }
 
                 try {
                     _sendPageOut(pageOutRef);
 
                     // --- check send ajax lock ---
                     _triggerSendToServer({
-                        lock : _xhr.locked,
-                        method : '_leavePageView'
+                        'req-type':1  // --- use ajax handle --
                     });
-                   //sendToServer();
-
-
-
 
                 } catch (e) {
                     if (window.console) {
@@ -590,46 +593,115 @@ Date.prototype.format = function(fmt) {
             return xhr;
         }
 
-
-
-
-        function _triggerSendToServer(arg) {
-
-            console.log( arg.method + " , " + arg.lock  );
-            if (arg.lock) {
-                return;
-            }
-            _xhr.method = arg.method;
-
+        /**
+         *  private trigger handle
+         * @param argRef
+         * @private
+         */
+        function _triggerSendToServer(argRef) {
             // --- sent to server ---
-            sendToServer(_xhr);
 
+            // --- use ajax ---
+            if (argRef['req-type'] == 1) {
+                sendToServer(_xhr);
+            }
 
+            // --- use script tag --
+            else {
+                _sentServerByScriptTag();
+            }
         };
 
+        /**
+         * load server for script
+         * @private
+         */
+        function _sentServerByScriptTag() {
 
-
-
-
-        var _xhr = XHR();
-        _xhr.locked = 0;
-
-
-
-        // --- send to server ----
-        var sendToServer = function() {
-
-            var _localXhr = arguments[0];
-            var url = _this.host + _devicePath['pc'] +  _pathMap['COLLECT'] + _version + '?' + _localXhr.method;
+            var url = _this.host + _devicePath['pc'] +  _pathMap['COLLECT'] + _version;
             if (___queue.length == 0) {
                 return ;
             }
 
 
+
+            // --- sent ---
             // --- check the lock  ,if lock , not invoke message ---
             var queStr = JSON.stringify(___queue);
 
-            _localXhr.open('POST' , url , true);
+            url = url + '?' + '_i=' + _gconf['inst'] + '&_td=' + encodeURIComponent(queStr);
+
+            var elemTag = document.createElement('script');
+            var curTags = document.getElementsByTagName('script');
+
+            var secTag = null, hasOne = 0;
+            if (curTags.length > 2) {
+
+                for (var i = 0 ; i < curTags.length ; i++) {
+                    var tmpTag = curTags[i];
+                    var scrtagSrc = tmpTag.src;
+                    if (scrtagSrc) {
+                        var keyworkInd = scrtagSrc.indexOf('collect') > -1;
+
+                        if ( keyworkInd && scrtagSrc.indexOf('_i='+_gconf['inst']) > -1 ) {
+                            secTag = tmpTag;
+                            hasOne = 1;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (!secTag) {
+                secTag = curTags[1];
+            }
+
+
+            elemTag.async = 'true';
+            elemTag.src = url;
+
+            // --- update older script tag
+            if (hasOne) {
+                // --- clear tag first --
+                secTag.parentNode.replaceChild(elemTag ,  secTag);
+            }
+            else {
+                secTag.parentNode.insertBefore(elemTag , secTag);
+            }
+        };
+
+        /**
+         * invoke by callback script tag
+         */
+        _this.callbackByScriptTag = function(serverRes) {
+
+            if ( serverRes.success ) {
+                // --- clear queue ---
+                ___queue =  [];
+
+            }
+
+        }
+
+
+        // --- private method ---
+        var _xhr = XHR();
+        _xhr.locked = 0;
+
+        // --- send to server ----
+        var sendToServer = function() {
+
+            var _localXhr = arguments[0];
+            var url = _this.host + _devicePath['pc'] +  _pathMap['COLLECT'] + _version;
+            if (___queue.length == 0) {
+                return ;
+            }
+            // --- check the lock  ,if lock , not invoke message ---
+            var queStr = JSON.stringify(___queue);
+
+            url = url + '?' + '_i=' + _gconf['inst'] + '&_td=' + encodeURIComponent(queStr)
+
+            _localXhr.open('GET' , url , false);
 
             _localXhr.onreadystatechange = function(domObj) {
 
@@ -641,21 +713,18 @@ Date.prototype.format = function(fmt) {
                         // ---  success message ---
                         ___queue =  [];
                     }
-
-
                 }
                 // --- not init method
                 else if (_localXhr.readyState != 4) {
                     _localXhr.locked = 1;
                 }
 
-                console.log('local message : ' + _localXhr.method);
 
             };
 
-            _localXhr.setRequestHeader('content-type','application/x-www-form-urlencoded');
+            //_localXhr.setRequestHeader('content-type','application/x-www-form-urlencoded');
             // --- fire event ---
-            _localXhr.send( encodeURIComponent(queStr) );
+            _localXhr.send();
 
         };
 
@@ -663,7 +732,7 @@ Date.prototype.format = function(fmt) {
 
         // --- trigger scheudler ---
         try {
-            var iId = setInterval(sendToServer , 5000 , _localXhr);
+            var iId = setInterval(_triggerSendToServer , 5000 , {});
         } catch (Error) {
 
             //console.log(Error);
@@ -755,6 +824,7 @@ Date.prototype.format = function(fmt) {
              window.TrackerManager = TrackerManager;
 
          }
+
      } catch (e) {
 
          if (window.console) {
