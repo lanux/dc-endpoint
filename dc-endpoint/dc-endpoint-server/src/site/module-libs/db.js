@@ -9,8 +9,6 @@ var DB = function() {
     var _cur_driver_type = 'none';
 
 
-    var __lokiContextMap = {};
-
     var _basedir = '.';
 
     _this.config = function(conf) {
@@ -68,21 +66,7 @@ var DB = function() {
     _this.getHisSchemes = function() {
         var schemes = [];
 
-        if (_cur_driver_type == 'loki') {
 
-            var listSches = lokiDb.listCollections();
-            if (listSches.length < 1) {
-                return schemes;
-            }
-            for (var i=0;i < listSches.length;i++) {
-                if ( __currentSchemeName != listSches[i]['name'] ) {
-                    schemes.push( listSches[i]['name'] );
-                }
-            }
-
-
-
-        }
 
         return schemes;
     };
@@ -94,11 +78,12 @@ var DB = function() {
 
 
     _this.put = function(key , value ) {
-
         if (_cur_driver_type == 'file') {
-            _put_File(key , value);
+            _put_forFile(key , value);
         }
     };
+
+
 
     /**
      * use put file api
@@ -106,31 +91,8 @@ var DB = function() {
      * @param value
      * @private
      */
-    _put_File = function(key , value) {
-        var linecontent = key + '=>' + JSON.stringify(value)+'\r\n';
-        var path = _basedir + '/'+ __currentFile;
-
-        fs.exists(path , function(exists) {
-            if (exists) {
-
-                fs.appendFile(path , linecontent , {encoding:'utf-8'} , function(err) {
-                    if (err) {
-                        console.log(err);
-                    }
-                    console.log('Append key : "' + key +'" saved.');
-                });
-
-            } else {
-
-                fs.writeFile(path , linecontent , {encoding:'utf-8'} , function(err) {
-                    if (err) {
-                        console.log(err);
-                    }
-                    console.log('Create key : "' + key +'" saved.');
-                });
-
-            }
-        });
+    _put_forFile = function(key , value) {
+        _file_tmpKeyMap[key] = value;
     };
 
     function _get_File(key ,handler) {
@@ -195,12 +157,6 @@ var DB = function() {
     _this.getFromScheme = function(schemeName , key) {
 
         var result = null;
-        if (_cur_driver_type = 'loki') {
-
-            var refColl = __lokiContextMap[schemeName];
-            result = refColl.find({'_idkey': key});
-
-        }
 
         var result;
 
@@ -212,15 +168,78 @@ var DB = function() {
      */
     _this.getAllFromScheme = function(schemeName) {
 
-        if (_cur_driver_type = 'loki') {
-
-            var refColl = __lokiContextMap[schemeName];
-
-        }
-
         return [];
 
+    };
+
+
+    _this.commit = function(handleMap) {
+        try {
+            if (_cur_driver_type == 'file') {
+                _writeTmpContentToFile(handleMap);
+            }
+        } catch (err) {
+            handleMap(err);
+        }
+
+
+    };
+
+
+    var _file_tmpKeyMap = {};
+
+    // --- pub all file
+    function _writeTmpContentToFile(handle) {
+
+        var linecontent = '';
+
+        for (var i in _file_tmpKeyMap) {
+
+            linecontent = linecontent + i + '=>' + JSON.stringify(_file_tmpKeyMap[i])+'\r\n';
+        }
+
+
+        // --- execute content first
+
+        if (linecontent.length  == 0) {
+            if (handle) {
+                handle();
+            }
+            return ;
+        }
+        // execute another funciton
+
+        // --- write all content to file ---
+        var path = _basedir + '/'+ __currentFile;
+        fs.exists(path , function(exists) {
+            if (exists) {
+                fs.appendFile(path , linecontent , {encoding:'utf-8'} , function(err) {
+                    if (err) {
+                       handle(err);
+                    }
+                    // --- clean all object ---
+                    _file_tmpKeyMap = {};
+                });
+            } else {
+                fs.writeFile(path , linecontent , {encoding:'utf-8'} , function(err) {
+                    if (err) {
+                        handle(err);
+                    }
+                    // --- clean all object ---
+                    _file_tmpKeyMap = {};
+                });
+
+            }
+        });
+
     }
+
+
+    _this.close = function() {
+
+    };
+
+
 
 
 }

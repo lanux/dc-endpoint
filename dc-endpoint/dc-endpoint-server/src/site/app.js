@@ -6,6 +6,10 @@ var url = require('url');
 var async=require('async');
 var Router = require('node-router');
 var dateFormat = require('dateformat');
+var config = require('config');
+
+// --- above up all require module  ---
+
 
 // base route
 var router = Router();
@@ -17,7 +21,7 @@ var PORT = 3000;
 
 var db = require('./module-libs/db');
 db.config({
-    'driver-type':'file',
+    'driver-type':config.get('db.driver-type'),
     'base-dir':__dirname
 });
 
@@ -43,19 +47,32 @@ function getLogFile(dateInput) {
     var minVal = parseInt(min);
     var subFileMsg = '';
 
-    if (minVal > 0 && minVal <= 10) {
+    if (minVal > 0 && minVal <= 5) {
         subFileMsg = '1';
-    } else if (minVal > 10 && minVal <= 20) {
+    } else if (minVal > 5 && minVal <= 10) {
         subFileMsg = '2';
-    } else if (minVal > 20 && minVal <= 30) {
+    } else if (minVal > 10 && minVal <= 15) {
         subFileMsg = '3';
-    } else if (minVal > 30 && minVal <= 40) {
+    } else if (minVal > 15 && minVal <= 20) {
         subFileMsg = '4';
-    } else if (minVal > 40 && minVal <= 50) {
+    } else if (minVal > 20 && minVal <= 25) {
         subFileMsg = '5';
-    } else if (minVal > 50 && minVal <= 59) {
+    } else if (minVal > 25 && minVal <= 30) {
         subFileMsg = '6';
+    } else if (minVal > 30 && minVal <= 35) {
+        subFileMsg = '7';
+    } else if (minVal > 35 && minVal <= 40) {
+        subFileMsg = '8';
+    } else if (minVal > 40 && minVal <= 45) {
+        subFileMsg = '9';
+    } else if (minVal > 45 && minVal <= 50) {
+        subFileMsg = 'a';
+    } else if (minVal > 50 && minVal <= 55) {
+        subFileMsg = 'b';
+    } else if (minVal > 55 && minVal <= 59) {
+        subFileMsg = 'c';
     }
+
     return prefile+'_'+subFileMsg;
 }
 
@@ -143,16 +160,28 @@ route('GET' , '/web/collect/v1' , function(req, res, next) {
         var scheprefix = objContent['t'];
         db.setScheme(curFile);
 
-        objContent['userIp'] = ip;
+        objContent['ci'] = ip;
 
         var docKey = ip + '_' + objContent['cid'] + '_' +rightNowStr;
 
         // --- put to level db ---
         db.put(docKey, objContent);
-        console.log('out : ' + p);
 
     }
 
+    // --- submit handle --
+
+    db.commit(function(err) {
+        if (err) {
+            console.log(err);
+        } else {
+            console.log('Commit completed!');
+        }
+    });
+
+
+
+    db.close();
 
     // --- response service ---
     var result = {
@@ -166,12 +195,6 @@ route('GET' , '/web/collect/v1' , function(req, res, next) {
 
 
 
-
-
-
-
-
-
 /**
  * create server define
  */
@@ -180,3 +203,21 @@ var server = http.createServer(router);
 // --- startup server
 server.listen(PORT);
 console.log("Server runing at port: " + PORT + ".");
+
+// --- create scheduler
+var CronJob = require('cron').CronJob;
+var job = new CronJob({
+    cronTime: '0 0/5 * * * *',
+    onTick: function() {
+
+        // --- create file ---
+        var now = new Date();
+        var curFile = getLogFile(now);
+        db.setScheme(curFile);
+
+        // --- update setting ---
+
+    },
+    start: false
+});
+job.start();

@@ -244,9 +244,11 @@
             }
 
             // ---- store access url record ---
+            /*
             var _accHist = "URLHIST-" + userId;
 
             var urlHistArray = Utils.getLocal(_accHist);
+
             if (!urlHistArray || typeof urlHistArray === 'undefined') {
                 urlHistArray = [];
             }
@@ -260,6 +262,7 @@
                 'hostname' : window.location.hostname,
                 'hash' : window.location.hash
             };
+            */
 
 
             if (_this.supportSessionStorage) {
@@ -328,7 +331,9 @@
         var _sendPageOut = function(pageOutRef) {
             // --- push to queue
             var queue = {
-                'ol': pageOutRef['url'],
+                'dp': pageOutRef['page'],
+                'dh' : document.location.origin,
+                'ds' : document.location.search,
                 't' : 'pageview',
                 'pa' : 'out',
                 'timestamp' : pageOutRef['timestamp'],
@@ -349,7 +354,9 @@
         function _sendScreenView() {
             // --- push to queue ---
             var queue = {
-                'dl':  window.location.href,
+                'dp': location.pathname,
+                'dh' : document.location.origin,
+                'ds' : document.location.search,
                 't':'screenview',
                 'cei' : _clientEnvInfo
             };
@@ -371,7 +378,9 @@
 
             // --- push to queue ---
             var queue = {
-                'dl':  window.location.href,
+                'dp': location.pathname,
+                'dh' : document.location.origin,
+                'ds' : document.location.search,
                 't':'event',
                 'req-time':Utils.dateformat(new Date(),"yyyy-MM-dd HH:mm:ss.S"),
                 'ec' : eventRef['eventCategory'],
@@ -482,6 +491,9 @@
                         else if (hitType === 'pageview') {
                             argsAppend['page'] = hitTypeObj['page'];
                         }
+                        else if ( hitType === 'user') {
+                            argsAppend['account'] = hitTypeObj['account'];
+                        }
 
                     } else if (typeof arguments[1] === 'string') {
                         hitType = arguments[1];
@@ -499,6 +511,9 @@
                         }
                         else if (hitType === 'pageview') {
                             argsAppend['page'] = arguments[2];
+                        }
+                        else if (hitType === 'user') {
+                            argsAppend['account'] = arguments[2];
                         }
                     }
 
@@ -521,8 +536,10 @@
 
                     else if (hitType === 'screenview') {
                         _sendScreenView();
-                    }
 
+                        _resizeScreenView();
+
+                    }
                     // --- add event to handle ---
                     else if (hitType === 'event') {
 
@@ -532,6 +549,10 @@
                     // --- add business event to handle ---
                     else if (hitType === 'biz') {
                         _this._sendBiz(argsAppend);
+                    }
+
+                    else if (hitType === 'account') {
+                        _sentUser(argsAppend);
                     }
 
 
@@ -546,6 +567,35 @@
 
             }
         };
+
+        function _resizeScreenView() {
+
+        };
+
+        /**
+         *
+         * define user ref object
+         * @param userRef
+         * @private
+         */
+        function _sentUser(userRef) {
+            var queue = {
+                't':'user',
+                'udi' : userRef['account']
+            };
+            queue[___USER_ID] = Utils.getCookie(___USER_ID);
+
+            // --- get referrrer ---
+            _this.addQueue(queue);
+
+
+            // --- trigger event ---
+            // --- check send ajax lock ---
+            _triggerSendToServer({
+                'req-type':0  // --- use script tag handle --
+            });
+        };
+
 
         /**
          * left page set
@@ -581,6 +631,7 @@
                 } else {
                     pageOutRef['url'] = ori.URL;
                 }
+                pageOutRef['page'] = location.pathname;
 
                 try {
                     _sendPageOut(pageOutRef);
@@ -645,13 +696,11 @@
                 return ;
             }
 
-
-
             // --- sent ---
             // --- check the lock  ,if lock , not invoke message ---
             var queStr = JSON.stringify(___queue);
 
-            url = url + '?' + '_i=' + _gconf['inst'] + '&_td=' + encodeURIComponent(queStr);
+            url = url + '?' + '_i=' + _gconf['inst'] + '&_ti=' + _instId + '&_td=' + encodeURIComponent(queStr);
 
             var elemTag = document.createElement('script');
             var curTags = document.getElementsByTagName('script');
@@ -721,7 +770,7 @@
             // --- check the lock  ,if lock , not invoke message ---
             var queStr = JSON.stringify(___queue);
 
-            url = url + '?' + '_i=' + _gconf['inst'] + '&_td=' + encodeURIComponent(queStr)
+            url = url + '?' + '_i=' + _gconf['inst'] + '&_ti=' + _instId + '&_td=' + encodeURIComponent(queStr)
 
             _localXhr.open('GET' , url , false);
 
@@ -744,7 +793,6 @@
 
             };
 
-            //_localXhr.setRequestHeader('content-type','application/x-www-form-urlencoded');
             // --- fire event ---
             _localXhr.send();
 
@@ -846,6 +894,10 @@
              window.TrackerManager = TrackerManager;
 
          }
+
+
+         // --- bind event ---
+
 
      } catch (e) {
 
