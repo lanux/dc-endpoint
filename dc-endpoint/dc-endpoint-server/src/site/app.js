@@ -22,7 +22,7 @@ var PORT = 3000;
 var db = require('./module-libs/db');
 db.config({
     'driver-type':config.get('db.driver-type'),
-    'base-dir':__dirname
+    'base-dir':config.get('base.dir')
 });
 
 // ---- add middleware (optional ----
@@ -47,7 +47,7 @@ function getLogFile(dateInput) {
     var minVal = parseInt(min);
     var subFileMsg = '';
 
-    if (minVal > 0 && minVal <= 5) {
+    if (minVal >= 0 && minVal <= 5) {
         subFileMsg = '1';
     } else if (minVal > 5 && minVal <= 10) {
         subFileMsg = '2';

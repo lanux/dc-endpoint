@@ -1,0 +1,8 @@
+{
+  "db": {
+    "driver-type": "file"
+  },
+  "base":{
+    "dir":"/home/tracker"
+  }
+}

@@ -6,29 +6,15 @@
  * append function function
  */
 
-
 (function (factory) {
     "use strict";
-    /*
-     if (typeof define === 'function' && define.amd) {
-     define(['jquery'], factory);
-     }
-     else if(typeof module !== 'undefined' && module.exports) {
-     module.exports = factory(require('jquery'));
-     }
-     else {
-     factory(jQuery);
-     }
-     */
 
-    factory(null);
-}(function($, undefined) {
+    factory(window , document);
+}(function(_win , doc) {
     "use strict";
 
     // ---- utils object ----
-    var Utils = function() {
-        var _this = this;
-    }
+    var Utils = {};
 
     // --- set cookie ---
     Utils.setCookie = function(c_name, value, expiredays, path, domain, secure) {
@@ -44,15 +30,15 @@
 
     // --- get cookie ---
     Utils.getCookie = function(c_name) {
-        if (document.cookie.length>0)
-        {
-            var  c_start=document.cookie.indexOf(c_name + "=")
-            if (c_start!=-1)
-            {
+        if (document.cookie.length>0) {
+            var  c_start=document.cookie.indexOf(c_name + "=");
+            if (c_start!=-1) {
                 c_start=c_start + c_name.length+1
-                var c_end=document.cookie.indexOf(";",c_start)
-                if (c_end==-1) c_end=document.cookie.length
-                return unescape(document.cookie.substring(c_start,c_end))
+                var c_end=document.cookie.indexOf(";",c_start);
+                if (c_end==-1) {
+                    c_end=document.cookie.length;
+                }
+                return decodeURIComponent(document.cookie.substring(c_start,c_end));
             }
         }
         return "";
@@ -166,22 +152,19 @@
     };
 
 
+    // ==================== define Tracker Class ======================
 
 
-
-
-
-
-    // set the tracker class ---
-    var Tracker = function(_instId) {
-        var ___ACC_NAME = "uid", ___USER_ID = "cid", ___DATA_REFERRER = "dr", __SCREEN_RE;
-
-        var _this = this;
-
-        var ___queue = [];
-
-        _this.host = 'http://localhost:3000';
-
+    /***
+     * create Tracker Class for Collect wetsite
+     * @param _instId
+     * @param _argHost
+     * @constructor
+     */
+    var Tracker = function(_instId , _argHost) {
+        // --- define variable handle ----
+        var ___UID = "uid", ___CID = "cid", ___DATA_REFERRER = "dr", __SCREEN_RE, _this = this,___queue = [] ;
+        var _host = _argHost['protocol'] + _argHost['host'] + ':' + _argHost['port'];
         var _devicePath = {
             'pc':'/web',
             'mobile':'/mobile'
@@ -199,7 +182,386 @@
         _this.supportLocalStorage = window.localStorage ? true : false;
         _this.supportSessionStorage = window.sessionStorage ? true : false;
 
-        _this.loadPageInfo = function() {
+
+        // ============ private method area ================
+
+
+        /**
+         * left page set
+         * @private
+         */
+        function _leavePageView() {
+
+            // --- call and define event
+
+            window.onbeforeunload = function(evt) {
+
+                // --- sent event handle ---
+                var ori = evt['target'];
+                var timeStamp = evt.timeStamp;
+                var charset = ori.charset;
+
+                var leaveTime = new Date();
+                //leaveTime.setMilliseconds(timeStamp);
+                //leaveTime.setTime( timeStamp );
+
+
+                var pageOutRef = {
+                    'charset': charset,
+                    'timestamp' : timeStamp,
+                    'lt':Utils.dateformat(new Date() , "yyyy-MM-dd HH:mm:ss")
+                };
+
+                var browser = Utils.checkBrowser();
+
+
+                if (browser == 'MSIE') {
+                    pageOutRef['url'] = window.location.href;
+                } else {
+                    pageOutRef['url'] = ori.URL;
+                }
+                pageOutRef['page'] = location.pathname;
+
+                try {
+                    _sendPageOut(pageOutRef);
+
+                    // --- check send ajax lock ---
+                    _triggerSendToServer({
+                        'req-type':1  // --- use ajax handle --
+                    });
+
+                } catch (e) {
+                    if (window.console) {
+                        console.log(e);
+                    }
+                }
+
+            }
+
+        }
+
+
+        function _resizeScreenView() {
+
+        };
+
+
+        /***
+         * eventRef 事件关联对像
+         * @param eventRef
+         * @private
+         */
+        function _sendEvent(eventRef) {
+
+            var rt = new Date();
+
+            // --- push to queue ---
+            var queue = {
+                'dp': location.pathname,
+                'dh' : document.location.origin,
+                'ds' : document.location.search,
+                't':'event',
+                'req-time':Utils.dateformat(new Date(),"yyyy-MM-dd HH:mm:ss.S"),
+                'ec' : eventRef['eventCategory'],
+                'ea' : eventRef['eventAction']
+            };
+            queue[___CID] = Utils.getCookie(___CID);
+
+            if (Utils.getCookie(___UID)) {
+                queue[___UID] = Utils.getCookie(___UID);
+            }
+
+            if (eventRef['eventLabel']) {
+                queue['el'] = eventRef['eventLabel'];
+            }
+
+            if ( eventRef['eventValue'] ) {
+                queue['ev'] = eventRef['eventValue'];
+            }
+            _this.addQueue(queue);
+
+        };
+
+        /**
+         *
+         * @param pageOutRef
+         * @private
+         */
+        function _sendPageOut(pageOutRef) {
+            // --- push to queue
+            var queue = {
+                'dp': pageOutRef['page'],
+                'dh' : document.location.origin,
+                'ds' : document.location.search,
+                't' : 'pageview',
+                'pa' : 'out',
+                'timestamp' : pageOutRef['timestamp'],
+                'charset' : pageOutRef['charset'],
+                'req-time' : pageOutRef['lt']
+            }
+            queue[___CID] = Utils.getCookie(___CID);
+
+            if (Utils.getCookie(___UID)) {
+                queue[___UID] = Utils.getCookie(___UID);
+            }
+
+            // --- get referrrer ---
+            _this.addQueue(queue);
+        };
+
+        /**
+         * load and count page view
+         * @param pageRef
+         * @private
+         */
+        function _sendPageView(pageRef) {
+            // --- push to queue
+            var queue = {
+                'dp': pageRef['page'],
+                'dh' : document.location.origin,
+                'ds' : document.location.search,
+                't' : 'pageview',
+                'pa' : 'in',
+                'req-time' : Utils.dateformat(new Date(),"yyyy-MM-dd HH:mm:ss")
+            }
+            queue[___CID] = Utils.getCookie(___CID);
+            if (Utils.getCookie(___UID)) {
+                queue[___UID] = Utils.getCookie(___UID);
+            }
+
+            var dr = _this.lastReferrer;
+            if (dr) {
+                // --- get from other referrer ----
+                queue['dr'] = dr;
+            }
+
+            // --- append title ---
+            if (pageRef['title']) {
+                queue['title'] = pageRef['title'];
+            }
+
+            if (pageRef['ul']) {
+                queue['ul'] = pageRef['ul'];
+            }
+
+
+            // --- get referrrer ---
+            _this.addQueue(queue);
+
+            // fire sent to server
+            _triggerSendToServer({});
+
+        };
+
+        /**
+         *  define and call screen view
+         * @private
+         */
+        function _sendScreenView() {
+            // --- push to queue ---
+            var queue = {
+                'dp': location.pathname,
+                'dh' : document.location.origin,
+                'ds' : document.location.search,
+                't':'screenview',
+                'cei' : _clientEnvInfo
+            };
+            queue[___CID] = Utils.getCookie(___CID);
+
+            if (Utils.getCookie(___UID)) {
+                queue[___UID] = Utils.getCookie(___UID);
+            }
+
+            // --- get referrrer ---
+            _this.addQueue(queue);
+
+        };
+
+        /**
+         *
+         * define user ref object
+         * @param userRef
+         * @private
+         */
+        function _sentUser(userRef) {
+            var queue = {
+                't':'user',
+                'udi' : userRef['account']
+            };
+            queue[___CID] = Utils.getCookie(___CID);
+
+            // --- get referrrer ---
+            _this.addQueue(queue);
+
+
+            // --- trigger event ---
+            // --- check send ajax lock ---
+            _triggerSendToServer({
+                'req-type':0  // --- use script tag handle --
+            });
+        };
+
+        /**
+         *  private trigger handle
+         * @param argRef
+         * @private
+         */
+        function _triggerSendToServer(argRef) {
+            // --- sent to server ---
+
+            // --- use ajax ---
+            if (argRef['req-type'] == 1) {
+                _sendToServer(_xhr);
+            }
+
+            // --- use script tag --
+            else {
+                _sentServerByScriptTag();
+            }
+        };
+
+
+        // --- private method ---
+        var _xhr = _XHR();
+        _xhr.locked = 0;
+        // --- send to server ----
+        function _sendToServer() {
+
+            var _localXhr = arguments[0];
+            var url = _host + _devicePath['pc'] +  _pathMap['COLLECT'] + _version;
+            if (___queue.length == 0) {
+                return ;
+            }
+            // --- check the lock  ,if lock , not invoke message ---
+            var queStr = JSON.stringify(___queue);
+
+            url = url + '?' + '_i=' + _gconf['inst'] + '&_ti=' + _instId + '&_td=' + encodeURIComponent(queStr)
+
+            _localXhr.open('GET' , url , false);
+
+            _localXhr.onreadystatechange = function(domObj) {
+
+                // --- request complete  ---
+                if (_localXhr.readyState == 4) {
+                    // --- remote queue ---
+                    if (_localXhr.status == 200) {
+                        _localXhr.locked = 0;
+                        // ---  success message ---
+                        ___queue =  [];
+                    }
+                }
+                // --- not init method
+                else if (_localXhr.readyState != 4) {
+                    _localXhr.locked = 1;
+                }
+
+
+            };
+
+            // --- fire event ---
+            _localXhr.send();
+
+        };
+
+        // --- inner method ---
+        function _XHR() {
+            var xhr;
+            try {xhr = new XMLHttpRequest();}
+            catch(e) {
+                var IEXHRVers =["Msxml3.XMLHTTP","Msxml2.XMLHTTP","Microsoft.XMLHTTP"];
+                for (var i=0,len=IEXHRVers.length;i< len;i++) {
+                    try {xhr = new ActiveXObject(IEXHRVers[i]);}
+                    catch(e) {continue;}
+                }
+            }
+            return xhr;
+        }
+
+
+        /**
+         * load server for script
+         * @private
+         */
+        function _sentServerByScriptTag() {
+
+            var url = _host + _devicePath['pc'] +  _pathMap['COLLECT'] + _version;
+            if (___queue.length == 0) {
+                return ;
+            }
+
+            // --- sent ---
+            // --- check the lock  ,if lock , not invoke message ---
+            var queStr = JSON.stringify(___queue);
+
+            url = url + '?' + '_i=' + _gconf['inst'] + '&_ti=' + _instId + '&_td=' + encodeURIComponent(queStr);
+
+            var elemTag = document.createElement('script');
+            var curTags = document.getElementsByTagName('script');
+
+            var secTag = null, hasOne = 0;
+            if (curTags.length > 2) {
+
+                for (var i = 0 ; i < curTags.length ; i++) {
+                    var tmpTag = curTags[i];
+                    var scrtagSrc = tmpTag.src;
+                    if (scrtagSrc) {
+                        var keyworkInd = scrtagSrc.indexOf('collect') > -1;
+
+                        if ( keyworkInd && scrtagSrc.indexOf('_i='+_gconf['inst']) > -1 ) {
+                            secTag = tmpTag;
+                            hasOne = 1;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (!secTag) {
+                secTag = curTags[1];
+            }
+
+
+            elemTag.async = 'true';
+            elemTag.src = url;
+
+            // --- update older script tag
+            if (hasOne) {
+                // --- clear tag first --
+                secTag.parentNode.replaceChild(elemTag ,  secTag);
+            }
+            else {
+                secTag.parentNode.insertBefore(elemTag , secTag);
+            }
+        };
+
+        // ============ public method area ================
+
+        /**
+         * define client endpoint
+         */
+        _this.init = function() {
+            // --- get the user current message id ---
+            var userId = Utils.getCookie(___CID);
+            if (!userId) {
+                userId = Utils.genUUID();
+            }
+            // --- one year ---
+            Utils.setCookie(___CID , userId , 365);
+            _clientInfo[___CID] = userId;
+
+
+            var accountName = Utils.getCookie(___UID);
+            if ( accountName ) {
+                // --- --- binding clientInfo object ---
+                _clientInfo[___UID] = accountName;
+            }
+
+
+            if (_this.supportSessionStorage) {
+                // --- save to last url ---
+                Utils.getSession('lastUrl');
+            }
+
 
             // --- get client nav info ---
             _clientEnvInfo['bro_acn'] = navigator.appCodeName;
@@ -223,212 +585,11 @@
 
         };
 
-        /**
-         * define client endpoint
-         */
-        _this.initClientEndpoint = function() {
-            // --- get the user current message id ---
-            var userId = Utils.getCookie(___USER_ID);
-            if (!userId) {
-                userId = Utils.genUUID();
-            }
-            // --- one year ---
-            Utils.setCookie(___USER_ID , userId , 365);
-            _clientInfo[___USER_ID] = userId;
-
-
-            var accountName = Utils.getCookie(___ACC_NAME);
-            if ( accountName ) {
-                // --- --- binding clientInfo object ---
-                _clientInfo[___ACC_NAME] = accountName;
-            }
-
-            // ---- store access url record ---
-            /*
-            var _accHist = "URLHIST-" + userId;
-
-            var urlHistArray = Utils.getLocal(_accHist);
-
-            if (!urlHistArray || typeof urlHistArray === 'undefined') {
-                urlHistArray = [];
-            }
-
-            // --- put url Hist tp local store ---
-            var rec = {
-                'req-time' : Utils.dateformat(new Date(),"yyyy-MM-dd HH:mm:ss"),
-                'url' : window.location.href,
-                'origin' : window.location.origin,
-                'pathname' : window.location.pathname,
-                'hostname' : window.location.hostname,
-                'hash' : window.location.hash
-            };
-            */
-
-
-            if (_this.supportSessionStorage) {
-                // --- save to last url ---
-                Utils.getSession('lastUrl');
-            }
-
-
-            // --- get from cookie ---
-
-
-
-
-            //urlHistArray.push(rec);
-            //Utils.setLocal(_accHist, urlHistArray);
-
-        };
-
-
-        /**
-         * load and count page view
-         */
-        var _sendPageView = function(pageRef) {
-            // --- push to queue
-            var queue = {
-                'dp': pageRef['page'],
-                'dh' : document.location.origin,
-                'ds' : document.location.search,
-                't' : 'pageview',
-                'pa' : 'in',
-                'req-time' : Utils.dateformat(new Date(),"yyyy-MM-dd HH:mm:ss")
-            }
-            queue[___USER_ID] = Utils.getCookie(___USER_ID);
-
-
-            var dr = _this.lastReferrer;
-            if (dr) {
-                // --- get from other referrer ----
-                queue['dr'] = dr;
-            }
-
-            // --- append title ---
-            if (pageRef['title']) {
-                queue['title'] = pageRef['title'];
-            }
-
-            if (pageRef['ul']) {
-                queue['ul'] = pageRef['ul'];
-            }
-
-
-            // --- get referrrer ---
-            _this.addQueue(queue);
-
-            _triggerSendToServer({});
-
-
-        };
-
 
         /**
          *
-         * @param pageOutRef
-         * @private
+         * @param queueObj
          */
-        var _sendPageOut = function(pageOutRef) {
-            // --- push to queue
-            var queue = {
-                'dp': pageOutRef['page'],
-                'dh' : document.location.origin,
-                'ds' : document.location.search,
-                't' : 'pageview',
-                'pa' : 'out',
-                'timestamp' : pageOutRef['timestamp'],
-                'charset' : pageOutRef['charset'],
-                'req-time' : pageOutRef['lt']
-            }
-            queue[___USER_ID] = Utils.getCookie(___USER_ID);
-
-
-            // --- get referrrer ---
-            _this.addQueue(queue);
-        };
-
-        /**
-         *  define and call screen view
-         * @private
-         */
-        function _sendScreenView() {
-            // --- push to queue ---
-            var queue = {
-                'dp': location.pathname,
-                'dh' : document.location.origin,
-                'ds' : document.location.search,
-                't':'screenview',
-                'cei' : _clientEnvInfo
-            };
-            queue[___USER_ID] = Utils.getCookie(___USER_ID);
-
-            // --- get referrrer ---
-            _this.addQueue(queue);
-
-        };
-
-
-        /**
-         * @param eventRef 事件关联对像
-         *
-         */
-        function _sendEvent(eventRef) {
-
-            var rt = new Date();
-
-            // --- push to queue ---
-            var queue = {
-                'dp': location.pathname,
-                'dh' : document.location.origin,
-                'ds' : document.location.search,
-                't':'event',
-                'req-time':Utils.dateformat(new Date(),"yyyy-MM-dd HH:mm:ss.S"),
-                'ec' : eventRef['eventCategory'],
-                'ea' : eventRef['eventAction']
-            };
-            queue[___USER_ID] = Utils.getCookie(___USER_ID);
-
-            if (eventRef['eventLabel']) {
-                queue['el'] = eventRef['eventLabel'];
-            }
-
-            if ( eventRef['eventValue'] ) {
-                queue['ev'] = eventRef['eventValue'];
-            }
-            _this.addQueue(queue);
-
-        };
-
-        /**
-         *
-         * @param bizRef
-         * @private
-         */
-        _this._sendBiz = function(bizRef) {
-            // --- push to queue ---
-            var queue = {
-                'dl':  window.location.href,
-                't':'biz',
-                'req-time' : Utils.dateformat(new Date(),"yyyy-MM-dd HH:mm:ss"),
-                'bc' : eventRef['bizCategory'],
-                'ba' : eventRef['bizAction']
-            };
-            queue[___USER_ID] = Utils.getCookie(___USER_ID);
-
-            if (eventRef['bizLabel']) {
-                queue['bl'] = eventRef['bizLabel'];
-            }
-
-            if ( eventRef['bizValue'] ) {
-                queue['bv'] = eventRef['bizValue'];
-            }
-
-            _this.addQueue(queue);
-        };
-
-
-
-
         _this.addQueue = function(queueObj) {
             //var queStr = JSON.stringify(queueObj);
             ___queue.push( queueObj );
@@ -443,8 +604,10 @@
         };
 
 
-
-
+        var _priv_plugins = {};
+        _this.bindPlugins = function(plugins) {
+            _priv_plugins = plugins;
+        };
 
 
         /**
@@ -464,6 +627,17 @@
 
             if (command.indexOf(':') > -1) {
                 // --- get the command message
+                var pluginCmds = command.split(":");
+
+                // --- call plugin ---
+                var pluginInst = _priv_plugins[pluginCmds[0]];
+
+                // --- call event ---
+                pluginInst.triggerEvent(pluginCmds[1] );
+
+
+
+
 
             } else {
 
@@ -548,196 +722,14 @@
                     }
                     // --- add business event to handle ---
                     else if (hitType === 'biz') {
-                        _this._sendBiz(argsAppend);
+                        //_this._sendBiz(argsAppend);
                     }
 
-                    else if (hitType === 'account') {
+                    else if (hitType === 'user') {
                         _sentUser(argsAppend);
                     }
-
-
                 }
 
-                // --- add plugin
-                else if (command === 'provide') {
-
-                }
-
-
-
-            }
-        };
-
-        function _resizeScreenView() {
-
-        };
-
-        /**
-         *
-         * define user ref object
-         * @param userRef
-         * @private
-         */
-        function _sentUser(userRef) {
-            var queue = {
-                't':'user',
-                'udi' : userRef['account']
-            };
-            queue[___USER_ID] = Utils.getCookie(___USER_ID);
-
-            // --- get referrrer ---
-            _this.addQueue(queue);
-
-
-            // --- trigger event ---
-            // --- check send ajax lock ---
-            _triggerSendToServer({
-                'req-type':0  // --- use script tag handle --
-            });
-        };
-
-
-        /**
-         * left page set
-         * @private
-         */
-        function _leavePageView() {
-
-            // --- call and define event
-
-            window.onbeforeunload = function(evt) {
-
-                // --- sent event handle ---
-                var ori = evt['target'];
-                var timeStamp = evt.timeStamp;
-                var charset = ori.charset;
-
-                var leaveTime = new Date();
-                //leaveTime.setMilliseconds(timeStamp);
-                //leaveTime.setTime( timeStamp );
-
-
-                var pageOutRef = {
-                    'charset': charset,
-                    'timestamp' : timeStamp,
-                    'lt':Utils.dateformat(new Date() , "yyyy-MM-dd HH:mm:ss")
-                };
-
-                var browser = Utils.checkBrowser();
-
-
-                if (browser == 'MSIE') {
-                    pageOutRef['url'] = window.location.href;
-                } else {
-                    pageOutRef['url'] = ori.URL;
-                }
-                pageOutRef['page'] = location.pathname;
-
-                try {
-                    _sendPageOut(pageOutRef);
-
-                    // --- check send ajax lock ---
-                    _triggerSendToServer({
-                        'req-type':1  // --- use ajax handle --
-                    });
-
-                } catch (e) {
-                    if (window.console) {
-                        console.log(e);
-                    }
-                }
-
-            }
-
-        }
-
-
-        // --- inner method ---
-        function XHR() {
-            var xhr;
-            try {xhr = new XMLHttpRequest();}
-            catch(e) {
-                var IEXHRVers =["Msxml3.XMLHTTP","Msxml2.XMLHTTP","Microsoft.XMLHTTP"];
-                for (var i=0,len=IEXHRVers.length;i< len;i++) {
-                    try {xhr = new ActiveXObject(IEXHRVers[i]);}
-                    catch(e) {continue;}
-                }
-            }
-            return xhr;
-        }
-
-        /**
-         *  private trigger handle
-         * @param argRef
-         * @private
-         */
-        function _triggerSendToServer(argRef) {
-            // --- sent to server ---
-
-            // --- use ajax ---
-            if (argRef['req-type'] == 1) {
-                sendToServer(_xhr);
-            }
-
-            // --- use script tag --
-            else {
-                _sentServerByScriptTag();
-            }
-        };
-
-        /**
-         * load server for script
-         * @private
-         */
-        function _sentServerByScriptTag() {
-
-            var url = _this.host + _devicePath['pc'] +  _pathMap['COLLECT'] + _version;
-            if (___queue.length == 0) {
-                return ;
-            }
-
-            // --- sent ---
-            // --- check the lock  ,if lock , not invoke message ---
-            var queStr = JSON.stringify(___queue);
-
-            url = url + '?' + '_i=' + _gconf['inst'] + '&_ti=' + _instId + '&_td=' + encodeURIComponent(queStr);
-
-            var elemTag = document.createElement('script');
-            var curTags = document.getElementsByTagName('script');
-
-            var secTag = null, hasOne = 0;
-            if (curTags.length > 2) {
-
-                for (var i = 0 ; i < curTags.length ; i++) {
-                    var tmpTag = curTags[i];
-                    var scrtagSrc = tmpTag.src;
-                    if (scrtagSrc) {
-                        var keyworkInd = scrtagSrc.indexOf('collect') > -1;
-
-                        if ( keyworkInd && scrtagSrc.indexOf('_i='+_gconf['inst']) > -1 ) {
-                            secTag = tmpTag;
-                            hasOne = 1;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (!secTag) {
-                secTag = curTags[1];
-            }
-
-
-            elemTag.async = 'true';
-            elemTag.src = url;
-
-            // --- update older script tag
-            if (hasOne) {
-                // --- clear tag first --
-                secTag.parentNode.replaceChild(elemTag ,  secTag);
-            }
-            else {
-                secTag.parentNode.insertBefore(elemTag , secTag);
             }
         };
 
@@ -755,48 +747,8 @@
         }
 
 
-        // --- private method ---
-        var _xhr = XHR();
-        _xhr.locked = 0;
 
-        // --- send to server ----
-        var sendToServer = function() {
-
-            var _localXhr = arguments[0];
-            var url = _this.host + _devicePath['pc'] +  _pathMap['COLLECT'] + _version;
-            if (___queue.length == 0) {
-                return ;
-            }
-            // --- check the lock  ,if lock , not invoke message ---
-            var queStr = JSON.stringify(___queue);
-
-            url = url + '?' + '_i=' + _gconf['inst'] + '&_ti=' + _instId + '&_td=' + encodeURIComponent(queStr)
-
-            _localXhr.open('GET' , url , false);
-
-            _localXhr.onreadystatechange = function(domObj) {
-
-               // --- request complete  ---
-                if (_localXhr.readyState == 4) {
-                    // --- remote queue ---
-                    if (_localXhr.status == 200) {
-                        _localXhr.locked = 0;
-                        // ---  success message ---
-                        ___queue =  [];
-                    }
-                }
-                // --- not init method
-                else if (_localXhr.readyState != 4) {
-                    _localXhr.locked = 1;
-                }
-
-
-            };
-
-            // --- fire event ---
-            _localXhr.send();
-
-        };
+        // ========= pre define event code area ===================
 
 
 
@@ -812,12 +764,46 @@
     }
 
 
+    // ============== Define Tracker Manager Handle ===========================
+
+    /**
+     *
+     * @type {{_trackerInst: {}, init: TrackerManager.init, create: TrackerManager.create, _reg_plugins: {}, register: TrackerManager.register, getScriptHost: TrackerManager.getScriptHost, loadPlugin: TrackerManager.loadPlugin}}
+     */
     var TrackerManager = {
 
         /**
          * binding instance handle ---
          */
         _trackerInst : {
+
+        },
+
+
+        init:function() {
+
+            // --- load plugin
+            var elemTag = document.createElement('script');
+            var curTags = document.getElementsByTagName('script');
+
+            var secTag = null, hasOne = 0;
+            if (curTags.length > 1) {
+
+                for (var i = 0 ; i < curTags.length ; i++) {
+                    var tmpTag = curTags[i];
+                    var scrtagSrc = tmpTag.src;
+                    if (scrtagSrc) {
+                        var keyworkInd = scrtagSrc.indexOf('/analytics/v1/web.js') > -1;
+
+                        if ( keyworkInd ) {
+                            secTag = tmpTag;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            this._scriptTag = secTag;
 
         },
 
@@ -836,22 +822,98 @@
             var _inst = _thisManager[trackingId];
 
             if (!_inst) {
-                _inst = new Tracker(trackingId);
+                var host = TrackerManager.getScriptHost();
+                host['port'] = 3000;
+                _inst = new Tracker(trackingId , host);
                 _thisManager[trackingId] = _inst;
             }
 
-            _inst.initClientEndpoint();
+            _inst.init();
 
-            // ---- load current page info ---
-            _inst.loadPageInfo();
+            // --- bind all load plugins ---
+            _inst.bindPlugins(_thisManager._reg_plugins);
 
 
 
             return _inst;
 
+        },
+
+        // --- register plugin ---
+        _reg_plugins : {},
+        register : function(pluginName , constructor) {
+            var _this = this;
+
+            if (!_this._reg_plugins[pluginName]) {
+                _this._reg_plugins[pluginName] = new constructor();
+            }
+
+        },
+
+        /**
+         * remove registed plugin by name
+         * @param pluginName
+         */
+        unregister : function(pluginName) {
+
+        },
+
+
+
+        // --- get script host url --
+        getScriptHost : function() {
+
+            var src = this._scriptTag.src;
+
+            var beginContentInd = src.indexOf('//');
+            var protocol = src.substring(0 , beginContentInd+2);
+            src = src.substring(beginContentInd+2);
+            var hostStr = src.substring(0 , src.indexOf('/'));
+
+            var host = {
+                protocol : protocol
+            }
+
+            if (hostStr.indexOf(':') > -1) {
+                var hostArray = hostStr.split(':');
+                host['host'] = hostArray[0];
+                host['port'] = hostArray[1];
+            } else {
+                host['host'] = hostStr;
+            }
+
+            return host;
+        },
+
+
+        loadPlugin : function(pluginName) {
+
+            // --- check plugin load first
+
+
+
+            // --- load plugin
+            var elemTag = document.createElement('script');
+
+            var secTag = this._scriptTag;
+
+
+            var path = secTag.src.substring(0 , secTag.src.lastIndexOf('/')) + '/plugins/' + pluginName + '.js';
+
+            // --- append node ---
+            elemTag.async = 'true';
+            elemTag.src = path;
+
+            // --- update older script tag
+            secTag.parentNode.appendChild(elemTag);
         }
+
+
+
     };
 
+
+    // ========== main program ===================
 
     // --- check and load global varaible ---
     var _gconf = {
@@ -872,8 +934,19 @@
      */
      try {
          if (TrackerManager) {
-            var _tracker = TrackerManager.create(_gconf['channel']);
 
+             TrackerManager.init();
+
+
+             // --- register plugins ---
+             if (_gconf['plugins']) {
+                 var pluginNames = _gconf['plugins'].split(',');
+                 for (var i = 0 ; i < pluginNames.length ; i++) {
+                     TrackerManager.loadPlugin(pluginNames[i]);
+                 }
+             }
+
+            var _tracker = TrackerManager.create(_gconf['channel']);
 
              // --- check inst name --
              if (window[_gconf['inst']]) {
@@ -885,6 +958,7 @@
              else {
                  window[_gconf['inst']] = _tracker;
              }
+
 
              // --- fire trigger event ---
              window[_gconf['inst']].track('send','screenview');

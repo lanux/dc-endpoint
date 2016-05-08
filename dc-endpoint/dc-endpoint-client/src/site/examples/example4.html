@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Example 3</title>
+
+    <script type="text/javascript">
+
+        var _aconf = _aconf || [];
+
+        // --- set input channel ---
+        _aconf.push(['channel','MA-PORTAL']);
+        _aconf.push(['inst','_tracker']); // define window instance
+
+        _aconf.push(['plugins', 'ma,ecommerce']);
+
+        // --- add script tag ---
+        (function(win , doc , elem , prefix , device , version) {
+            var elemTag = doc.createElement(elem),curTag = doc.getElementsByTagName(elem)[0], src = prefix +'analytics'+'/'+version+'/'+device+'.js';
+            elemTag.async = 1;
+            elemTag.src = src;
+            curTag.parentNode.insertBefore(elemTag , curTag);
+        })(window, document, 'script', 'http://localhost:63342/site/' , 'web' , 'v1');
+
+        // ---- calll and event  function
+
+        function addTransaction() {
+
+            _tracker.track('ecommerce:addTransaction',{
+                'id': '1234',                     // Transaction ID. Required.
+                'affiliation': 'Acme Clothing',   // Affiliation or store name.
+                'revenue': '11.99',               // Grand Total.
+                'shipping': '5',                  // Shipping.
+                'tax': '1.29'                     // Tax.
+            })
+
+        }
+
+
+
+
+    </script>
+</head>
+
+<body>
+Example 3:
+该例子提供 Plugins 使用样例
+
+<button onclick="javascript:addTransaction();">Add Transaction</button>
+
+
+
+
+
+
+</body>
+
+</html>
