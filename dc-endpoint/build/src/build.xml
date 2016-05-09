@@ -8,7 +8,7 @@
         <format>zip</format>  
     </formats>
     
-    <baseDirectory>.</baseDirectory>
+    <!-- baseDirectory>.</baseDirectory -->
     <!-- copy dir -->  
     <fileSets>
          <fileSet>
