@@ -1,0 +1,54 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>com.ma.bi</groupId>
+		<artifactId>dc-endpoint</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+	</parent>
+	<artifactId>build</artifactId>
+	<packaging>pom</packaging>
+
+	<build>
+		<plugins>
+			<!-- <plugin> <artifactId>maven-resources-plugin</artifactId> <executions> 
+				<execution> <id>copy-version-resources</id> <phase>process-resources</phase> 
+				<goals> <goal>copy-resources</goal> </goals> <configuration> <overwrite>true</overwrite> 
+				<outputDirectory>${basedir}/target/</outputDirectory> <resources> <resource> 
+				<directory>../src/</directory> <includes> <include>version.txt</include> 
+				</includes> <filtering>true</filtering> </resource> </resources> </configuration> 
+				</execution> </executions> </plugin> -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<version>2.6</version>
+				<executions>
+					<execution>
+						<id>all-build</id>
+						<phase>package</phase>
+						<configuration>
+							<finalName>${project.parent.artifactId}-${project.parent.version}</finalName>
+							<appendAssemblyId>false</appendAssemblyId>
+							<descriptors>
+								<descriptor>src/build.xml</descriptor>
+							</descriptors>
+						</configuration>
+						<goals>
+							<goal>single</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+
+			<!-- <plugin> <groupId>org.apache.maven.plugins</groupId> <artifactId>maven-antrun-plugin</artifactId> 
+				<version>1.8</version> <executions> <execution> <id>default-cli</id> <goals> 
+				<goal>run</goal> </goals> <configuration> <target> <delete> <fileset dir="../src/sql" 
+				includes="*.*" /> <fileset dir="../src/doc" includes="*.*" /> </delete> <copy 
+				todir="../src/sql"> <fileset dir="../src/template/sql" /> </copy> <copy todir="../src/doc"> 
+				<fileset dir="../src/template/doc" /> </copy> </target> </configuration> 
+				</execution> </executions> </plugin> -->
+		</plugins>
+	</build>
+
+</project>
