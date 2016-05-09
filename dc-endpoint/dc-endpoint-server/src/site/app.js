@@ -80,7 +80,7 @@ function getLogFile(dateInput) {
 /**
  * receive data from client endpoint
  */
-route('POST' , '/web/collect/v1' , function(req, res, next) {
+route('POST' , '/log/web/collect/v1' , function(req, res, next) {
 
     res.writeHead(200, {
         "content-type":"text/plain",
@@ -136,7 +136,7 @@ route('POST' , '/web/collect/v1' , function(req, res, next) {
 /**
  *  get handle data
  */
-route('GET' , '/web/collect/v1' , function(req, res, next) {
+route('GET' , '/log/web/collect/v1' , function(req, res, next) {
 
     res.writeHead(200, {
         "content-type":"text/plain",

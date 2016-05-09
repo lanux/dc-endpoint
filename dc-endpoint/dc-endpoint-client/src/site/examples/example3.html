@@ -12,7 +12,6 @@
         _aconf.push(['channel','MA-PORTAL']);
         _aconf.push(['inst','_tracker']); // define window instance
 
-        _aconf.push(['plugins', 'ma,ecommerce']);
 
         // --- add script tag ---
         (function(win , doc , elem , prefix , device , version) {
@@ -24,18 +23,13 @@
 
         // ---- calll and event  function
 
-        function addTransaction() {
-
-            _tracker.track('ecommerce:addTransaction',{
-                'id': '1234',                     // Transaction ID. Required.
-                'affiliation': 'Acme Clothing',   // Affiliation or store name.
-                'revenue': '11.99',               // Grand Total.
-                'shipping': '5',                  // Shipping.
-                'tax': '1.29'                     // Tax.
-            })
-
+        function bindUser() {
+            _tracker.track('send','user' , 'bind' , 'Testser');
         }
 
+        function unbindUser() {
+            _tracker.track('send','user' , 'unbind' , 'TestUser');
+        }
 
 
 
@@ -46,7 +40,8 @@
 Example 3:
 该例子提供 hittype = user 使用样例
 
-<button onclick="javascript:addTransaction();">Add Transaction</button>
+<button onclick="javascript:bindUser();">登陆绑定</button>
+<button onclick="javascript:unbindUser();">登陆解绑定</button>
 
 
 

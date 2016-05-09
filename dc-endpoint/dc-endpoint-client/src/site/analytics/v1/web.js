@@ -9,8 +9,13 @@
 (function (factory) {
     "use strict";
 
-    factory(window , document);
-}(function(_win , doc) {
+    var globalConf = {
+        port:80
+    };
+
+
+    factory(globalConf);
+}(function(_globalConf) {
     "use strict";
 
     // ---- utils object ----
@@ -164,7 +169,7 @@
     var Tracker = function(_instId , _argHost) {
         // --- define variable handle ----
         var ___UID = "uid", ___CID = "cid", ___DATA_REFERRER = "dr", __SCREEN_RE, _this = this,___queue = [] ;
-        var _host = _argHost['protocol'] + _argHost['host'] + ':' + _argHost['port'];
+        var _host = _argHost['protocol'] + _argHost['host'] + (_argHost['port'] ? ':' + _argHost['port'] : '');
         var _devicePath = {
             'pc':'/web',
             'mobile':'/mobile'
@@ -386,9 +391,20 @@
         function _sentUser(userRef) {
             var queue = {
                 't':'user',
-                'udi' : userRef['account']
+                'act': userRef['action'],
+                'req-time':Utils.dateformat(new Date(),"yyyy-MM-dd HH:mm:ss.S"),
+                'uid' : userRef['account']
             };
             queue[___CID] = Utils.getCookie(___CID);
+
+
+            if (userRef['action'] == 'bind') {
+                Utils.setCookie(___UID , userRef['account']);
+            }
+            else if (userRef['action'] == 'unbind') {
+                Utils.setCookie(___UID , userRef['account'] , -7);
+            }
+
 
             // --- get referrrer ---
             _this.addQueue(queue);
@@ -428,7 +444,7 @@
         function _sendToServer() {
 
             var _localXhr = arguments[0];
-            var url = _host + _devicePath['pc'] +  _pathMap['COLLECT'] + _version;
+            var url = _host + '/log' +  _devicePath['pc'] +  _pathMap['COLLECT'] + _version;
             if (___queue.length == 0) {
                 return ;
             }
@@ -484,7 +500,7 @@
          */
         function _sentServerByScriptTag() {
 
-            var url = _host + _devicePath['pc'] +  _pathMap['COLLECT'] + _version;
+            var url = _host + '/log' + _devicePath['pc'] +  _pathMap['COLLECT'] + _version;
             if (___queue.length == 0) {
                 return ;
             }
@@ -666,6 +682,7 @@
                             argsAppend['page'] = hitTypeObj['page'];
                         }
                         else if ( hitType === 'user') {
+                            argsAppend['action'] = hitTypeObj['action'];
                             argsAppend['account'] = hitTypeObj['account'];
                         }
 
@@ -687,7 +704,8 @@
                             argsAppend['page'] = arguments[2];
                         }
                         else if (hitType === 'user') {
-                            argsAppend['account'] = arguments[2];
+                            argsAppend['action'] = arguments[2]
+                            argsAppend['account'] = arguments[3];
                         }
                     }
 
@@ -823,7 +841,13 @@
 
             if (!_inst) {
                 var host = TrackerManager.getScriptHost();
-                host['port'] = 3000;
+
+                if (!_globalConf['port'] || _globalConf['port'] == 80 ) {
+                    delete host['port'];
+                } else {
+                    host['port'] = _globalConf['port'];
+                }
+
                 _inst = new Tracker(trackingId , host);
                 _thisManager[trackingId] = _inst;
             }
