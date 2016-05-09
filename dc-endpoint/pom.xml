@@ -11,5 +11,4 @@
 		<module>dc-endpoint-client</module>
 		<module>build</module>
 	</modules>
-
 </project>

@@ -13,14 +13,17 @@
     <fileSets>
          <fileSet>
         	<excludes>
-        		<exclude>.idea</exclude>
-        		<exclude>build</exclude>
-        		<exclude>node_modules</exclude>
+        		<exclude>/.idea/</exclude>
+        		<exclude>/build/</exclude>
+        		<exclude>/node_modules/</exclude>
         	</excludes>
             <directory>../dc-endpoint-server/src/site</directory>  
             <outputDirectory>server</outputDirectory>  
         </fileSet>
          <fileSet>
+         	<excludes>
+         		<exclude>/.idea/</exclude>
+         	</excludes>
             <directory>../dc-endpoint-client/src/site</directory>  
             <outputDirectory>web</outputDirectory>  
         </fileSet>        
