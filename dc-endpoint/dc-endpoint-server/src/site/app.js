@@ -98,6 +98,15 @@ route('POST' , '/log/web/collect/v1' , function(req, res, next) {
     var schemes = db.getHisSchemes();
 
 
+    if (!ip || !body) {
+        // --- break the message  ---
+        var result = {
+            success:false,
+            msg:'Could not accept request.'
+        }
+        res.end(JSON.stringify(result));
+    }
+
     // --- load current file ---
     for (var bodyCont in body) {
         var bodyRef = JSON.parse(bodyCont);

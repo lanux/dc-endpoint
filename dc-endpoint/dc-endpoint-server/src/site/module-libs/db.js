@@ -21,13 +21,20 @@ var DB = function() {
 
             _basedir = conf['base-dir'];
             fs.exists(_basedir , function(exists) {
-                if (!exists)  {
-                    fs.mkdir(_basedir, 777 , function(err , folder) {
-                        if (err) {
-                            throw err;
-                        }
-                    });
+                try {
+
+                    if (!exists)  {
+                        fs.mkdir(_basedir, 777 , function(err , folder) {
+                            if (err) {
+                                throw err;
+                            }
+                        });
+                    }
+
+                } catch (error) {
+                    console.log(error);
                 }
+
             });
 
         }
@@ -46,11 +53,18 @@ var DB = function() {
             // --- set lock file message ---
             var path = _basedir + '/lock';
 
-            fs.writeFile(path , __currentFile , {encoding:'utf-8'} , function(err) {
-                if (err) {
-                    console.log(err);
-                }
-            });
+            try {
+
+                fs.writeFile(path , __currentFile , {encoding:'utf-8'} , function(err) {
+                    if (err) {
+                        console.log(err);
+                    }
+                });
+
+            } catch (error) {
+                console.log(error);
+            }
+
 
         }
         __currentSchemeName = schemeName;
