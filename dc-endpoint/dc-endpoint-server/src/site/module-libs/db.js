@@ -21,13 +21,20 @@ var DB = function() {
 
             _basedir = conf['base-dir'];
             fs.exists(_basedir , function(exists) {
-                if (!exists)  {
-                    fs.mkdir(_basedir, 777 , function(err , folder) {
-                        if (err) {
-                            throw err;
-                        }
-                    });
+                try {
+
+                    if (!exists)  {
+                        fs.mkdir(_basedir, 777 , function(err , folder) {
+                            if (err) {
+                                throw err;
+                            }
+                        });
+                    }
+
+                } catch (error) {
+                    console.log(error);
                 }
+
             });
 
         }
@@ -46,11 +53,18 @@ var DB = function() {
             // --- set lock file message ---
             var path = _basedir + '/lock';
 
-            fs.writeFile(path , __currentFile , {encoding:'utf-8'} , function(err) {
-                if (err) {
-                    console.log(err);
-                }
-            });
+            try {
+
+                fs.writeFile(path , __currentFile , {encoding:'utf-8'} , function(err) {
+                    if (err) {
+                        console.log(err);
+                    }
+                });
+
+            } catch (error) {
+                console.log(error);
+            }
+
 
         }
         __currentSchemeName = schemeName;
@@ -212,24 +226,31 @@ var DB = function() {
         // --- write all content to file ---
         var path = _basedir + '/'+ __currentFile;
         fs.exists(path , function(exists) {
-            if (exists) {
-                fs.appendFile(path , linecontent , {encoding:'utf-8'} , function(err) {
-                    if (err) {
-                       handle(err);
-                    }
-                    // --- clean all object ---
-                    _file_tmpKeyMap = {};
-                });
-            } else {
-                fs.writeFile(path , linecontent , {encoding:'utf-8'} , function(err) {
-                    if (err) {
-                        handle(err);
-                    }
-                    // --- clean all object ---
-                    _file_tmpKeyMap = {};
-                });
+            try {
 
+                if (exists) {
+                    fs.appendFile(path , linecontent , {encoding:'utf-8'} , function(err) {
+                        if (err) {
+                            handle(err);
+                        }
+                        // --- clean all object ---
+                        _file_tmpKeyMap = {};
+                    });
+                } else {
+                    fs.writeFile(path , linecontent , {encoding:'utf-8'} , function(err) {
+                        if (err) {
+                            handle(err);
+                        }
+                        // --- clean all object ---
+                        _file_tmpKeyMap = {};
+                    });
+
+                }
+
+            } catch (error) {
+                console.log(error);
             }
+
         });
 
     }
