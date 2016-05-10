@@ -145,6 +145,8 @@ route('GET' , '/log/web/collect/v1' , function(req, res, next) {
 
     var ip = getClientIp(req);
 
+
+
     var now = new Date();
     var rightNowStr = dateFormat(now , "yyyy-mm-dd'T'HH:MM:ss.l");
 
@@ -152,6 +154,15 @@ route('GET' , '/log/web/collect/v1' , function(req, res, next) {
     var schemes = db.getHisSchemes();
     var _inst = req.query['_i'];
     var data = req.query['_td'];
+
+    if (!_inst || !data) {
+        // --- break the message  ---
+        var result = {
+            success:false,
+            msg:'Could not accept request.'
+        }
+        res.end(JSON.stringify(result));
+    }
 
     var bodyRef = JSON.parse(data);
 
@@ -168,6 +179,7 @@ route('GET' , '/log/web/collect/v1' , function(req, res, next) {
         db.put(docKey, objContent);
 
     }
+
 
     // --- submit handle --
 
