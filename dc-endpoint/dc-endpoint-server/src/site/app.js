@@ -164,45 +164,54 @@ route('GET' , '/log/web/collect/v1' , function(req, res, next) {
         res.end(JSON.stringify(result));
     }
 
-    var bodyRef = JSON.parse(data);
+    try {
 
-    for (var i = 0 ; i < bodyRef.length ; i++) {
-        var objContent = bodyRef[i];
-        var scheprefix = objContent['t'];
-        db.setScheme(curFile);
+        var bodyRef = JSON.parse(data);
 
-        objContent['ci'] = ip;
+        for (var i = 0 ; i < bodyRef.length ; i++) {
+            var objContent = bodyRef[i];
+            var scheprefix = objContent['t'];
+            db.setScheme(curFile);
 
-        var docKey = ip + '_' + objContent['cid'] + '_' +rightNowStr;
+            objContent['ci'] = ip;
 
-        // --- put to level db ---
-        db.put(docKey, objContent);
+            var docKey = ip + '_' + objContent['cid'] + '_' +rightNowStr;
 
-    }
+            // --- put to level db ---
+            db.put(docKey, objContent);
 
-
-    // --- submit handle --
-
-    db.commit(function(err) {
-        if (err) {
-            console.log(err);
-        } else {
-            console.log('Commit completed!');
         }
-    });
 
 
+        // --- submit handle --
 
-    db.close();
+        db.commit(function(err) {
+            if (err) {
+                console.log(err);
+            } else {
+                console.log('Commit completed!');
+            }
+        });
 
-    // --- response service ---
-    var result = {
-        success:true,
-        msg:'OK'
+        db.close();
+
+        // --- response service ---
+        var result = {
+            success:true,
+            msg:'OK'
+        }
+        res.end("window."+_inst + ".callbackByScriptTag("+JSON.stringify(result)+");");
+
+    } catch (err) {
+        console.log(err);
+
+        var result = {
+            success:false,
+            msg:'Server Error.'
+        }
+        res.end(JSON.stringify(result));
     }
-    res.end("window."+_inst + ".callbackByScriptTag("+JSON.stringify(result)+");");
-    var lastDate = new Date();
-    console.log('handle time : ' + ip + ',' + (lastDate.getTime() - now.getTime()));
+
 });
 
 

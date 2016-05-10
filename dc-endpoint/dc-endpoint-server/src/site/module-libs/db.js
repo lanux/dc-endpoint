@@ -19,7 +19,7 @@ var DB = function() {
                 throw new Error('Please set parameter "base-dir"');
             }
 
-            _basedir = conf['base-dir'] + '/tracker';
+            _basedir = conf['base-dir'];
             fs.exists(_basedir , function(exists) {
                 if (!exists)  {
                     fs.mkdir(_basedir, 777 , function(err , folder) {
