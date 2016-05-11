@@ -251,3 +251,22 @@ var job = new CronJob({
     start: false
 });
 job.start();
+
+
+/**
+ * monitor main thread
+ */
+process.on('uncaughtException' , (err) => {
+    console.log('Caugth exception: ${err}');
+});
+
+
+
+
+process.on('exit' , (code) => {
+    setTimeout(()=> {
+        console.log();
+    }, 0);
+
+    console.log('About to exit with code: ' , code);
+});

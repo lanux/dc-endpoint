@@ -3,7 +3,7 @@
   <parent>
     <groupId>com.ma.bi</groupId>
     <artifactId>dc-endpoint</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.2-SNAPSHOT</version>
   </parent>
   <artifactId>dc-endpoint-server</artifactId>
   <packaging>pom</packaging>

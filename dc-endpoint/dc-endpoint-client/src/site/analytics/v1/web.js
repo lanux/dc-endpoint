@@ -117,9 +117,6 @@
         return fmt;
     };
 
-
-
-
     /**
      * example : Utils.genUUID(32, 10)
      *
@@ -155,6 +152,18 @@
 
         return uuid.join('');
     };
+
+    Utils.addHandler = function(element , type , handler) {
+        if (element.addEventListener) {
+            element.addEventListener(type , handler , false);
+        }
+        else if (element.attachEvent) {
+            element.attachEvent("on" + type, handler);
+        } else {
+            element["on" + type] = handler;
+        }
+    };
+
 
 
     // ==================== define Tracker Class ======================
@@ -767,6 +776,12 @@
 
 
         // ========= pre define event code area ===================
+        Utils.addHandler(document,'scroll' , function() {
+            _triggerSendToServer({'req-type':0});
+        });
+        Utils.addHandler(window,'resize' , function() {
+            _triggerSendToServer({'req-type':0});
+        });
 
 
 
