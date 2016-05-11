@@ -227,7 +227,7 @@ route('GET' , '/log/web/collect/v1' , function(req, res, next) {
 
 /**
  * create server define
- */
+*/
 var server = http.createServer(router);
 
 // --- startup server
