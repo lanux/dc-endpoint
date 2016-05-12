@@ -204,52 +204,47 @@
          * left page set
          * @private
          */
-        function _leavePageView() {
+        function _leavePageView(evt) {
 
             // --- call and define event
+            // --- sent event handle ---
+            var ori = evt['target'];
+            var timeStamp = evt.timeStamp;
+            var charset = ori.charset;
 
-            window.onbeforeunload = function(evt) {
-
-                // --- sent event handle ---
-                var ori = evt['target'];
-                var timeStamp = evt.timeStamp;
-                var charset = ori.charset;
-
-                var leaveTime = new Date();
-                //leaveTime.setMilliseconds(timeStamp);
-                //leaveTime.setTime( timeStamp );
+            var leaveTime = new Date();
+            //leaveTime.setMilliseconds(timeStamp);
+            //leaveTime.setTime( timeStamp );
 
 
-                var pageOutRef = {
-                    'charset': charset,
-                    'timestamp' : timeStamp,
-                    'lt':Utils.dateformat(new Date() , "yyyy-MM-dd HH:mm:ss")
-                };
+            var pageOutRef = {
+                'charset': charset,
+                'timestamp' : timeStamp,
+                'lt':Utils.dateformat(new Date() , "yyyy-MM-dd HH:mm:ss")
+            };
 
-                var browser = Utils.checkBrowser();
+            var browser = Utils.checkBrowser();
 
 
-                if (browser == 'MSIE') {
-                    pageOutRef['url'] = window.location.href;
-                } else {
-                    pageOutRef['url'] = ori.URL;
+            if (browser == 'MSIE') {
+                pageOutRef['url'] = window.location.href;
+            } else {
+                pageOutRef['url'] = ori.URL;
+            }
+            pageOutRef['page'] = location.pathname;
+
+            try {
+                _sendPageOut(pageOutRef);
+
+                // --- check send ajax lock ---
+                _triggerSendToServer({
+                    'req-type':1  // --- use ajax handle --
+                });
+
+            } catch (e) {
+                if (window.console) {
+                    console.log(e);
                 }
-                pageOutRef['page'] = location.pathname;
-
-                try {
-                    _sendPageOut(pageOutRef);
-
-                    // --- check send ajax lock ---
-                    _triggerSendToServer({
-                        'req-type':1  // --- use ajax handle --
-                    });
-
-                } catch (e) {
-                    if (window.console) {
-                        console.log(e);
-                    }
-                }
-
             }
 
         }
@@ -730,7 +725,7 @@
                         _sendPageView(argsAppend);
 
                         // --- add new event and mark leave page ---
-                        _leavePageView(argsAppend);
+                        //_leavePageView(argsAppend);
                         // --- fire send page record ---
 
                     }
@@ -770,6 +765,12 @@
                 ___queue =  [];
 
             }
+            else {
+                // --- output error message ---
+                if (window.console) {
+                    console.log(serverRes.msg);
+                }
+            }
 
         }
 
@@ -781,6 +782,9 @@
         });
         Utils.addHandler(window,'resize' , function() {
             _triggerSendToServer({'req-type':0});
+        });
+        Utils.addHandler(window,'beforeunload' , function(evt) {
+            _leavePageView(evt);
         });
 
 
@@ -1010,6 +1014,30 @@
 
 
          // --- bind event ---
+         /**
+          * access call back handler facade
+          */
+         window.callbackByScriptTag = function(serverRes) {
+
+             // --- check the inst ---
+             if (window[_gconf['inst']]) {
+                 // --- call inst event ---
+                 window[_gconf['inst']].callbackByScriptTag(serverRes);
+             }
+             else {
+                 // --- use window response ---
+                 if ( !serverRes.success ) {
+                     // --- clear queue ---
+                     // --- output error message ---
+                     if (window.console) {
+                         console.log(serverRes.msg);
+                     }
+                 }
+
+             }
+
+
+         }
 
 
      } catch (e) {

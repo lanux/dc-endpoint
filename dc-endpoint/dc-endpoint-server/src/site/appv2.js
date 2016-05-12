@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const dateFormat = require('dateformat');
 const config = require('config');
 const async=require('async');
+var url = require('url');
 
 const PORT =+process.env.PORT || 3000;
 
@@ -82,7 +83,7 @@ else {
     var router = Router();
     router.use( cookieParser() );
     /*only use bodyParser on POST requests*/
-    router.use(  bodyParser.urlencoded({extended: false}) );
+    //router.use(  bodyParser.urlencoded({extended: false}) );
 
     // --- define mapping method ---
     router.get('/log/web/collect/v1', function (req, res , next) {
@@ -94,6 +95,8 @@ else {
 
         try {
 
+            var queryObj = url.parse(req.url , true).query;
+
             var ip = getClientIp(req);
 
             var now = new Date();
@@ -102,25 +105,17 @@ else {
             var curFile = getLogFile(now);
             var schemes = db.getHisSchemes();
 
-            if (!req.query) {
-                var result = {
-                    success:false,
-                    msg:'Could not accept request.'
-                }
-                res.end(JSON.stringify(result));
-                return;
+            if (!queryObj) {
+                // --- throw error ---
+                throw 'Request Query is empty. please check your url string.';
             }
 
-            var _inst = req.query['_i'];
-            var data = req.query['_td'];
+            var _inst = queryObj['_i'];
+            var data = queryObj['_td'];
 
             if (!_inst || !data) {
                 // --- break the message  ---
-                var result = {
-                    success:false,
-                    msg:'Could not accept request.'
-                }
-                res.end(JSON.stringify(result));
+                throw 'Param[_i] or param[_td] is defined incorrectly.Please check it.';
             }
 
 
@@ -158,16 +153,14 @@ else {
                 success:true,
                 msg:'OK'
             }
-            res.end("window."+_inst + ".callbackByScriptTag("+JSON.stringify(result)+");");
+            res.end("window.callbackByScriptTag("+JSON.stringify(result)+");");
 
         } catch (err) {
-            console.log(err);
-
             var result = {
                 success:false,
-                msg:'Server Error.'
-            }
-            res.end(JSON.stringify(result));
+                msg:err
+            };
+            res.end("window.callbackByScriptTag("+JSON.stringify(result)+");");
         }
     });
 
@@ -193,11 +186,8 @@ else {
 
             if (!ip || !body) {
                 // --- break the message  ---
-                var result = {
-                    success:false,
-                    msg:'Could not accept request.'
-                }
-                res.end(JSON.stringify(result));
+                throw 'Could not accept request.';
+
             }
 
             // --- load current file ---
@@ -228,19 +218,21 @@ else {
                 msg:'OK'
             }
 
-            res.end(JSON.stringify(result));
 
             var lastDate = new Date();
             console.log('handle time : ' + (lastDate.getTime() - now.getTime()));
+
+            res.end("window."+_inst + '.callbackResult = ' + JSON.stringify(result) + '.');
+
 
         } catch(error) {
             console.log(err);
 
             var result = {
                 success:false,
-                msg:'Server Error.'
+                msg:err
             }
-            res.end(JSON.stringify(result));
+            res.end("window."+_inst + '.callbackResult = ' + JSON.stringify(result) + '.');
         }
 
     });

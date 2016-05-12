@@ -13,12 +13,17 @@
         _aconf.push(['inst','_tracker']); // define window instance
 
         // --- add script tag ---
+
+
         (function(win , doc , elem , prefix , device , version) {
             var elemTag = doc.createElement(elem),curTag = doc.getElementsByTagName(elem)[0], src = prefix +'analytics'+'/'+version+'/'+device+'.js';
             elemTag.async = 1;
             elemTag.src = src;
             curTag.parentNode.insertBefore(elemTag , curTag);
         })(window, document, 'script', 'http://localhost:63342/site/' , 'web' , 'v1');
+
+
+
     </script>
 </head>
 

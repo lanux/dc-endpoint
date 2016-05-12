@@ -82,63 +82,76 @@ function getLogFile(dateInput) {
  */
 route('POST' , '/log/web/collect/v1' , function(req, res, next) {
 
-    res.writeHead(200, {
-        "content-type":"text/plain",
-        "Access-Control-Allow-Origin":"*"
-    });
+    try {
+        res.writeHead(200, {
+            "content-type":"text/plain",
+            "Access-Control-Allow-Origin":"*"
+        });
 
 
-    var ip = getClientIp(req);
-    var body = req.body;
+        var ip = getClientIp(req);
+        var body = req.body;
 
-    var now = new Date();
-    var rightNowStr = dateFormat(now , "yyyy-mm-dd'T'HH:MM:ss.l");
+        var now = new Date();
+        var rightNowStr = dateFormat(now , "yyyy-mm-dd'T'HH:MM:ss.l");
 
-    var curFile = getLogFile(now);
-    var schemes = db.getHisSchemes();
+        var curFile = getLogFile(now);
+        var schemes = db.getHisSchemes();
 
 
-    if (!ip || !body) {
-        // --- break the message  ---
+        if (!ip || !body) {
+            // --- break the message  ---
+            var result = {
+                success:false,
+                msg:'Could not accept request.'
+            }
+            res.end(JSON.stringify(result));
+        }
+
+        // --- load current file ---
+        for (var bodyCont in body) {
+            var bodyRef = JSON.parse(bodyCont);
+
+            for (var i = 0 ; i < bodyRef.length ; i++) {
+                var objContent = bodyRef[i];
+
+                var scheprefix = objContent['t'];
+                db.setScheme(curFile);
+
+                objContent['userIp'] = ip;
+
+                var docKey = ip + '_' + objContent['cid'] + '_' +rightNowStr;
+
+                // --- put to level db ---
+                db.put(docKey, objContent);
+
+            }
+
+        }
+        // --- access data rem ---
+
+        // --- response service ---
+        var result = {
+            success:true,
+            msg:'OK'
+        }
+
+        res.end(JSON.stringify(result));
+
+        var lastDate = new Date();
+        console.log('handle time : ' + (lastDate.getTime() - now.getTime()));
+
+    } catch (error) {
+        console.log(err);
+
         var result = {
             success:false,
-            msg:'Could not accept request.'
+            msg:'Server Error.'
         }
         res.end(JSON.stringify(result));
     }
 
-    // --- load current file ---
-    for (var bodyCont in body) {
-        var bodyRef = JSON.parse(bodyCont);
 
-        for (var i = 0 ; i < bodyRef.length ; i++) {
-            var objContent = bodyRef[i];
-
-            var scheprefix = objContent['t'];
-            db.setScheme(curFile);
-
-            objContent['userIp'] = ip;
-
-            var docKey = ip + '_' + objContent['cid'] + '_' +rightNowStr;
-
-            // --- put to level db ---
-            db.put(docKey, objContent);
-
-        }
-
-    }
-    // --- access data rem ---
-
-    // --- response service ---
-    var result = {
-        success:true,
-        msg:'OK'
-    }
-
-    res.end(JSON.stringify(result));
-
-    var lastDate = new Date();
-    console.log('handle time : ' + (lastDate.getTime() - now.getTime()));
 });
 
 
@@ -147,33 +160,37 @@ route('POST' , '/log/web/collect/v1' , function(req, res, next) {
  */
 route('GET' , '/log/web/collect/v1' , function(req, res, next) {
 
-    res.writeHead(200, {
-        "content-type":"text/plain",
-        "Access-Control-Allow-Origin":"*"
-    });
 
-    var ip = getClientIp(req);
-
-
-
-    var now = new Date();
-    var rightNowStr = dateFormat(now , "yyyy-mm-dd'T'HH:MM:ss.l");
-
-    var curFile = getLogFile(now);
-    var schemes = db.getHisSchemes();
-    var _inst = req.query['_i'];
-    var data = req.query['_td'];
-
-    if (!_inst || !data) {
-        // --- break the message  ---
-        var result = {
-            success:false,
-            msg:'Could not accept request.'
-        }
-        res.end(JSON.stringify(result));
-    }
 
     try {
+
+        res.writeHead(200, {
+            "content-type":"text/plain",
+            "Access-Control-Allow-Origin":"*"
+        });
+
+        var ip = getClientIp(req);
+
+
+
+        var now = new Date();
+        var rightNowStr = dateFormat(now , "yyyy-mm-dd'T'HH:MM:ss.l");
+
+        var curFile = getLogFile(now);
+        var schemes = db.getHisSchemes();
+        var _inst = req.query['_i'];
+        var data = req.query['_td'];
+
+        if (!_inst || !data) {
+            // --- break the message  ---
+            var result = {
+                success:false,
+                msg:'Could not accept requesthelo.'
+            }
+            res.end("window."+_inst + ".callbackByScriptTag("+JSON.stringify(result)+");");
+            return;
+
+        }
 
         var bodyRef = JSON.parse(data);
 
@@ -218,7 +235,7 @@ route('GET' , '/log/web/collect/v1' , function(req, res, next) {
             success:false,
             msg:'Server Error.'
         }
-        res.end(JSON.stringify(result));
+        res.end("window."+_inst + ".callbackByScriptTag("+JSON.stringify(result)+");");
     }
 
 });
@@ -237,15 +254,21 @@ console.log("Server runing at port: " + PORT + ".");
 // --- create scheduler
 var CronJob = require('cron').CronJob;
 var job = new CronJob({
-    cronTime: '0 0/5 * * * *',
+    cronTime: '* */5 * * * *',
     onTick: function() {
 
-        // --- create file ---
-        var now = new Date();
-        var curFile = getLogFile(now);
-        db.setScheme(curFile);
+        try {
+            // --- create file ---
+            var now = new Date();
+            var curFile = getLogFile(now);
+            db.setScheme(curFile);
 
-        // --- update setting ---
+            // --- update setting ---
+        } catch (error) {
+            console.log(err);
+        }
+
+
 
     },
     start: false
@@ -257,7 +280,7 @@ job.start();
  * monitor main thread
  */
 process.on('uncaughtException' , (err) => {
-    console.log('Caugth exception: ${err}');
+    console.log('Caugth exception: ${err} ' , err);
 });
 
 
@@ -265,7 +288,7 @@ process.on('uncaughtException' , (err) => {
 
 process.on('exit' , (code) => {
     setTimeout(()=> {
-        console.log();
+        console.log('server existed');
     }, 0);
 
     console.log('About to exit with code: ' , code);
