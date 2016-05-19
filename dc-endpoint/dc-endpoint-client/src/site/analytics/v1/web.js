@@ -28,7 +28,7 @@
         document.cookie = c_name + "=" + // cookie名称
             escape(value) + // 将cookie值进行编码
             ((expiredays == null) ? "" : ";expires=" + exdate.toGMTString()) + // 设置过期时间
-            ((path == null) ? '/' : ';path=' + path) + // 设置访问路径
+            ((path == null) ? ';path=/' : ';path=' + path) + // 设置访问路径
             ((domain == null) ? '' : ';domain=' + domain) + // 设置访问域
             ((secure == null) ? '' : ';secure=' + secure);　 // 设置是否加密
     };
@@ -101,19 +101,36 @@
             "m+" : date.getMinutes(),                 //分
             "s+" : date.getSeconds(),                 //秒
             "q+" : Math.floor((date.getMonth()+3)/3), //季度
-            "S"  : date.getMilliseconds()             //毫秒
+            "S"  : date.getMilliseconds(),            //毫秒
         };
 
-        if(/(y+)/.test(fmt)) {
-            fmt=fmt.replace(RegExp.$1, (date.getFullYear()+"").substr(4 - RegExp.$1.length));
-        }
-
-
-        for(var k in o) {
-            if(new RegExp("("+ k +")").test(fmt)) {
-                fmt = fmt.replace(RegExp.$1, (RegExp.$1.length==1) ? (o[k]) : (("00"+ o[k]).substr((""+ o[k]).length)));
+        if (fmt) {
+            if(/(y+)/.test(fmt)) {
+                fmt=fmt.replace(RegExp.$1, (date.getFullYear()+"").substr(4 - RegExp.$1.length));
             }
+
+
+            for(var k in o) {
+                if(new RegExp("("+ k +")").test(fmt)) {
+                    fmt = fmt.replace(RegExp.$1, (RegExp.$1.length==1) ? (o[k]) : (("00"+ o[k]).substr((""+ o[k]).length)));
+                }
+            }
+        } else {
+            // ---- use default ---
+            var defFmt = date.getFullYear();
+            defFmt = defFmt + (o["M+"] < 10 ? ('0' + o["M+"]):(''+o["M+"])) + (o["d+"] < 10 ? ('0' + o["d+"]):(''+o["d+"]));
+            defFmt = defFmt + 'T';
+            defFmt = defFmt + (o["H+"] < 10 ? ('0' + o["H+"]):(''+o["H+"]))+ ':'+ (o["m+"] < 10 ? ('0' + o["m+"]):(''+o["m+"])) + ':' + (o["s+"] < 10 ? ('0' + o["s+"]):(''+o["s+"]));
+            defFmt = defFmt + '.' +(o["S"] < 100?( (o["S"] < 10) ?'00' + o["S"]:'0' + o["S"] ):(''+o["S"]));
+
+            var timezoneLoc = date.toString().indexOf('GMT');
+            defFmt = defFmt + date.toString().substring(timezoneLoc+3 , timezoneLoc+8);
+
+            fmt = defFmt;
+
         }
+
+
         return fmt;
     };
 
@@ -220,7 +237,7 @@
             var pageOutRef = {
                 'charset': charset,
                 'timestamp' : timeStamp,
-                'lt':Utils.dateformat(new Date() , "yyyy-MM-dd HH:mm:ss")
+                'lt':Utils.dateformat(new Date())
             };
 
             var browser = Utils.checkBrowser();
@@ -270,7 +287,9 @@
                 'dh' : document.location.origin,
                 'ds' : document.location.search,
                 't':'event',
-                'req-time':Utils.dateformat(new Date(),"yyyy-MM-dd HH:mm:ss.S"),
+                'lang': _clientEnvInfo['lang'],
+                'cvt' : Utils.getCookie('cvt'),
+                'req-time':Utils.dateformat(new Date()),
                 'ec' : eventRef['eventCategory'],
                 'ea' : eventRef['eventAction']
             };
@@ -304,8 +323,8 @@
                 'ds' : document.location.search,
                 't' : 'pageview',
                 'pa' : 'out',
-                'timestamp' : pageOutRef['timestamp'],
-                'charset' : pageOutRef['charset'],
+                'lang': _clientEnvInfo['lang'],
+                'cvt' : Utils.getCookie('cvt'),
                 'req-time' : pageOutRef['lt']
             }
             queue[___CID] = Utils.getCookie(___CID);
@@ -329,9 +348,11 @@
                 'dp': pageRef['page'],
                 'dh' : document.location.origin,
                 'ds' : document.location.search,
+                'lang': _clientEnvInfo['lang'],
+                'cvt' : Utils.getCookie('cvt'),
                 't' : 'pageview',
                 'pa' : 'in',
-                'req-time' : Utils.dateformat(new Date(),"yyyy-MM-dd HH:mm:ss")
+                'req-time' : Utils.dateformat(new Date())
             }
             queue[___CID] = Utils.getCookie(___CID);
             if (Utils.getCookie(___UID)) {
@@ -372,6 +393,8 @@
                 'dp': location.pathname,
                 'dh' : document.location.origin,
                 'ds' : document.location.search,
+                'lang': _clientEnvInfo['lang'],
+                'cvt' : Utils.getCookie('cvt'),
                 't':'screenview',
                 'cei' : _clientEnvInfo
             };
@@ -396,7 +419,9 @@
             var queue = {
                 't':'user',
                 'act': userRef['action'],
-                'req-time':Utils.dateformat(new Date(),"yyyy-MM-dd HH:mm:ss.S"),
+                'lang': _clientEnvInfo['lang'],
+                'cvt' : Utils.getCookie('cvt'),
+                'req-time':Utils.dateformat(new Date()),
                 'uid' : userRef['account']
             };
             queue[___CID] = Utils.getCookie(___CID);
@@ -561,14 +586,38 @@
          */
         _this.init = function() {
             // --- get the user current message id ---
-            var userId = Utils.getCookie(___CID);
-            if (!userId) {
-                userId = Utils.genUUID();
+            var clientDevId = Utils.getCookie(___CID);
+            var clientVisiteTimes = 1;
+            var trackerInstanceActivity  = 1;
+            // --- create new clinet id ---
+            if (!clientDevId) {
+                clientDevId = Utils.genUUID();
+
+                // --- reset time ---
+                clientVisiteTimes = 1;
+
+                Utils.setCookie('cvt' , clientVisiteTimes , 365);
+                Utils.setCookie('_tia' , trackerInstanceActivity);
+
+            } else {
+                // --- exit client id ---
+                var trackerInstanceActivity = Utils.getCookie('_tia');
+
+                if( !trackerInstanceActivity ) {
+                    // ---- mark account type ---
+                    var cvtFromCookie = Utils.getCookie('cvt');
+                    console.log(cvtFromCookie);
+                    cvtFromCookie = cvtFromCookie? parseInt(cvtFromCookie?cvtFromCookie:0) + 1:parseInt(1) ;
+                    clientVisiteTimes = cvtFromCookie;
+                    trackerInstanceActivity = 1;
+                    Utils.setCookie('cvt' , clientVisiteTimes , 365);
+                    Utils.setCookie('_tia' , trackerInstanceActivity);
+                }
+
             }
             // --- one year ---
-            Utils.setCookie(___CID , userId , 365);
-            _clientInfo[___CID] = userId;
-
+            Utils.setCookie(___CID , clientDevId , 365);
+            _clientInfo[___CID] = clientDevId;
 
             var accountName = Utils.getCookie(___UID);
             if ( accountName ) {
@@ -602,6 +651,9 @@
 
             // --- get last referrer url ---
             _this.lastReferrer = document.referrer;
+
+
+
 
         };
 
