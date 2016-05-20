@@ -619,10 +619,50 @@
             Utils.setCookie(___CID , clientDevId , 365);
             _clientInfo[___CID] = clientDevId;
 
+            // --- get uid from account ---
             var accountName = Utils.getCookie(___UID);
+            var buyerStr = Utils.getCookie('buyer');
             if ( accountName ) {
                 // --- --- binding clientInfo object ---
                 _clientInfo[___UID] = accountName;
+
+                // --- check string and remove ---
+                if (!buyerStr) {
+                    // --- remove value ---
+                    Utils.setCookie(___UID , accountName , -7);
+                    delete _clientInfo[___UID];
+                }
+
+
+            } else {
+                // --- geth from other uid ---
+                try {
+
+                    if (buyerStr) {
+                        var buyerArrs = buyerStr.split('&');
+                        for (var i = 0 ; i < buyerArrs.length ; i++) {
+                            var loc = buyerArrs[i].indexOf('account:');
+                            if (loc > -1) {
+                                accountName =  buyerArrs[i].substring(loc+8);
+                                break;
+                            }
+                        }
+
+                        if (accountName) {
+                            _clientInfo[___UID] = accountName;
+                            Utils.setCookie(___UID , _clientInfo[___UID]);
+                        }
+                    }
+
+
+                } catch(err) {
+                    if (window.console) {
+                        console.log('UID is empty.');
+                    }
+                }
+
+
+
             }
 
 
