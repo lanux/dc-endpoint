@@ -396,13 +396,28 @@
                 'lang': _clientEnvInfo['lang'],
                 'cvt' : Utils.getCookie('cvt'),
                 't':'screenview',
-                'cei' : _clientEnvInfo
+                'req-time' : Utils.dateformat(new Date())
             };
             queue[___CID] = Utils.getCookie(___CID);
 
             if (Utils.getCookie(___UID)) {
                 queue[___UID] = Utils.getCookie(___UID);
             }
+
+            queue['bro_acn'] = _clientEnvInfo['bro_acn'];
+            queue['bro_name'] = _clientEnvInfo['bro_name'];
+            queue['pf'] = _clientEnvInfo['pf'];
+            queue['ua'] = _clientEnvInfo['ua'];
+
+
+            // --- for chrome ---
+            if (navigator.hardwareConcurrency) {
+                queue['cpus'] = _clientEnvInfo['cups'];
+            }
+
+            queue['sr'] = _clientEnvInfo['sr'];
+            queue['vp'] = _clientEnvInfo['vp'];
+
 
             // --- get referrrer ---
             _this.addQueue(queue);

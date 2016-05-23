@@ -180,6 +180,7 @@ route('GET' , '/log/web/collect/v1' , function(req, res, next) {
         var schemes = db.getHisSchemes();
         var _inst = req.query['_i'];
         var data = req.query['_td'];
+        var trackerChann = queryObj['_ti'];
 
         if (!_inst || !data) {
             // --- break the message  ---
@@ -202,6 +203,9 @@ route('GET' , '/log/web/collect/v1' , function(req, res, next) {
             objContent['ci'] = ip;
 
             var docKey = ip + '_' + objContent['cid'] + '_' +rightNowStr;
+            if (trackerChann) {
+                docKey = docKey + '_' + trackerChann;
+            }
 
             // --- put to level db ---
             db.put(docKey, objContent);

@@ -112,8 +112,10 @@ else {
 
             var _inst = queryObj['_i'];
             var data = queryObj['_td'];
+            var trackerChann = queryObj['_ti'];
 
-            if (!_inst || !data) {
+
+            if (!_inst || !data || !trackerChann) {
                 // --- break the message  ---
                 throw 'Param[_i] or param[_td] is defined incorrectly.Please check it.';
             }
@@ -129,6 +131,9 @@ else {
                 objContent['ci'] = ip;
 
                 var docKey = ip + '_' + objContent['cid'] + '_' +rightNowStr;
+                if (trackerChann) {
+                    docKey = docKey + '_' + trackerChann;
+                }
 
                 // --- put to level db ---
                 db.put(docKey, objContent);
