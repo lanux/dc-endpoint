@@ -206,7 +206,8 @@ route('GET' , '/log/web/collect/v1' , function(req, res, next) {
             if (trackerChann) {
                 docKey = docKey + '_' + trackerChann;
             }
-
+            docKey = docKey + '|' + i;
+            
             // --- put to level db ---
             db.put(docKey, objContent);
 

@@ -123,6 +123,7 @@ else {
 
             var bodyRef = JSON.parse(data);
 
+
             for (var i = 0 ; i < bodyRef.length ; i++) {
                 var objContent = bodyRef[i];
                 var scheprefix = objContent['t'];
@@ -134,6 +135,8 @@ else {
                 if (trackerChann) {
                     docKey = docKey + '_' + trackerChann;
                 }
+                // --- get at time ---
+                docKey = docKey + '|' + i;
 
                 // --- put to level db ---
                 db.put(docKey, objContent);
@@ -208,6 +211,8 @@ else {
                     objContent['userIp'] = ip;
 
                     var docKey = ip + '_' + objContent['cid'] + '_' +rightNowStr;
+
+                    docKey = docKey + '|' + i;
 
                     // --- put to level db ---
                     db.put(docKey, objContent);
