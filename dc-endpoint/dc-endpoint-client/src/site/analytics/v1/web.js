@@ -134,6 +134,26 @@
         return fmt;
     };
 
+    Utils.timestampWithTimezone = function(dateInst) {
+
+        if (!dateInst)  {
+            try {
+                dateInst = new Date();
+            } catch (err) {
+                if (window.console) {
+                    console.log(err);
+                }
+            }
+
+        }
+
+        var outputStr = dateInst.getTime() + '|' + dateInst.getTimezoneOffset();
+        return outputStr;
+    };
+
+
+
+
     /**
      * example : Utils.genUUID(32, 10)
      *
@@ -289,7 +309,8 @@
                 't':'event',
                 'lang': _clientEnvInfo['lang'],
                 'cvt' : Utils.getCookie('cvt'),
-                'req-time':Utils.dateformat(new Date()),
+                'tt' : Utils.timestampWithTimezone(rt),
+                'req-time':Utils.dateformat(rt),
                 'ec' : eventRef['eventCategory'],
                 'ea' : eventRef['eventAction']
             };
@@ -316,16 +337,18 @@
          * @private
          */
         function _sendPageOut(pageOutRef) {
-            // --- push to queue
+            var rt = new Date();
+            // --- push to queue ---
             var queue = {
                 'dp': pageOutRef['page'],
                 'dh' : document.location.origin,
                 'ds' : document.location.search,
                 't' : 'pageview',
+                'tt' : Utils.timestampWithTimezone(rt),
                 'pa' : 'out',
                 'lang': _clientEnvInfo['lang'],
                 'cvt' : Utils.getCookie('cvt'),
-                'req-time' : pageOutRef['lt']
+                'req-time':Utils.dateformat(rt)
             }
             queue[___CID] = Utils.getCookie(___CID);
 
@@ -343,6 +366,7 @@
          * @private
          */
         function _sendPageView(pageRef) {
+            var rt = new Date();
             // --- push to queue
             var queue = {
                 'dp': pageRef['page'],
@@ -352,7 +376,8 @@
                 'cvt' : Utils.getCookie('cvt'),
                 't' : 'pageview',
                 'pa' : 'in',
-                'req-time' : Utils.dateformat(new Date())
+                'tt' : Utils.timestampWithTimezone(rt),
+                'req-time' : Utils.dateformat(rt)
             }
             queue[___CID] = Utils.getCookie(___CID);
             if (Utils.getCookie(___UID)) {
@@ -388,6 +413,7 @@
          * @private
          */
         function _sendScreenView() {
+            var rt = new Date();
             // --- push to queue ---
             var queue = {
                 'dp': location.pathname,
@@ -396,7 +422,8 @@
                 'lang': _clientEnvInfo['lang'],
                 'cvt' : Utils.getCookie('cvt'),
                 't':'screenview',
-                'req-time' : Utils.dateformat(new Date())
+                'tt' : Utils.timestampWithTimezone(rt),
+                'req-time' : Utils.dateformat(rt)
             };
             queue[___CID] = Utils.getCookie(___CID);
 
