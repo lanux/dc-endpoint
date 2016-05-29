@@ -190,6 +190,26 @@
         return uuid.join('');
     };
 
+    Utils.getClientId = function() {
+
+        var userAgent = navigator.userAgent;
+        var uaLocationInd = 1, curLoc = 0, tmpUaLength;
+        for (uaLocationInd = 0, tmpUaLength = userAgent.length - 1; 0 <= tmpUaLength; tmpUaLength--) {
+            curLoc = userAgent.charCodeAt(tmpUaLength);
+            uaLocationInd = (uaLocationInd << 6 & 268435455) + curLoc + (curLoc << 14);
+            curLoc = uaLocationInd & 266338304;
+            uaLocationInd = 0 != curLoc ? uaLocationInd ^ curLoc >> 21 : uaLocationInd;
+        }
+        var tmpRandomKey = Math.round(2147483647 * Math.random());
+
+        var prefix = tmpRandomKey ^ uaLocationInd & 2147483647;
+        var suffix = Math.round((new Date).getTime() / 1E3);
+        var clientId = [prefix, suffix].join('.');
+
+        return clientId
+    };
+
+
     Utils.addHandler = function(element , type , handler) {
         if (element.addEventListener) {
             element.addEventListener(type , handler , false);
@@ -310,6 +330,7 @@
                 'lang': _clientEnvInfo['lang'],
                 'cvt' : Utils.getCookie('cvt'),
                 'tt' : Utils.timestampWithTimezone(rt),
+                'charset' : document.characterSet || document.charset,
                 'req-time':Utils.dateformat(rt),
                 'ec' : eventRef['eventCategory'],
                 'ea' : eventRef['eventAction']
@@ -347,6 +368,7 @@
                 'tt' : Utils.timestampWithTimezone(rt),
                 'pa' : 'out',
                 'lang': _clientEnvInfo['lang'],
+                'charset' : document.characterSet || document.charset,
                 'cvt' : Utils.getCookie('cvt'),
                 'req-time':Utils.dateformat(rt)
             }
@@ -374,6 +396,7 @@
                 'ds' : document.location.search,
                 'lang': _clientEnvInfo['lang'],
                 'cvt' : Utils.getCookie('cvt'),
+                'charset' : document.characterSet || document.charset,
                 't' : 'pageview',
                 'pa' : 'in',
                 'tt' : Utils.timestampWithTimezone(rt),
@@ -422,6 +445,7 @@
                 'lang': _clientEnvInfo['lang'],
                 'cvt' : Utils.getCookie('cvt'),
                 't':'screenview',
+                'charset' : document.characterSet || document.charset,
                 'tt' : Utils.timestampWithTimezone(rt),
                 'req-time' : Utils.dateformat(rt)
             };
@@ -633,7 +657,8 @@
             var trackerInstanceActivity  = 1;
             // --- create new clinet id ---
             if (!clientDevId) {
-                clientDevId = Utils.genUUID();
+                //clientDevId = Utils.genUUID();
+                clientDevId = Utils.getClientId();
 
                 // --- reset time ---
                 clientVisiteTimes = 1;
@@ -648,7 +673,6 @@
                 if( !trackerInstanceActivity ) {
                     // ---- mark account type ---
                     var cvtFromCookie = Utils.getCookie('cvt');
-                    console.log(cvtFromCookie);
                     cvtFromCookie = cvtFromCookie? parseInt(cvtFromCookie?cvtFromCookie:0) + 1:parseInt(1) ;
                     clientVisiteTimes = cvtFromCookie;
                     trackerInstanceActivity = 1;
