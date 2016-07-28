@@ -79,6 +79,10 @@ else {
     var Router = require('router');
     var finalhandler = require('finalhandler');
 
+    // --- conf http handle --
+    http.globalAgent.maxSockets = Infinity;
+
+
     // base route middler ware
     var router = Router();
     router.use( cookieParser() );
